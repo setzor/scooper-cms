@@ -18,18 +18,61 @@ import sys
 import sqlite3
 import json
 import base64
+import cgi
+import uuid
+from io import BytesIO
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs, unquote
 from datetime import datetime
 import re
 
-# Configuration
+# HELPERS
+# ============================================================================
+
+def get_theme_icon(theme):
+    """Get the appropriate icon for a theme (sun for light, moon for dark)."""
+    light_themes = ['light', 'rose-pine-dawn', 'catpuccin-latte']
+    return '&#127774;' if theme in light_themes else '&#127771;'
+=======
+# ============================================================================
+# HELPERS
+# ============================================================================
+
+def save_uploaded_file(field, upload_dir=UPLOADS_DIR):
+    """Save an uploaded file to the uploads directory and return the relative path."""
+    if not field or not field.filename:
+        return None
+    
+    # Generate a unique filename to prevent conflicts
+    ext = os.path.splitext(field.filename)[1].lower()
+    # Clean extension - only allow common image types
+    allowed_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'}
+    if ext not in allowed_extensions:
+        return None
+    
+    unique_name = f"{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(upload_dir, unique_name)
+    
+    try:
+        with open(file_path, 'wb') as f:
+            f.write(field.file.read())
+        # Return relative path from static directory
+        return os.path.join('/static/uploads', unique_name)
+    except Exception as e:
+        print(f"Error saving file: {e}")
+        return None
+
+def get_theme_icon(theme):
+    """Get the appropriate icon for a theme (sun for light, moon for dark)."""
+    light_themes = ['light', 'rose-pine-dawn', 'catpuccin-latte']
+    return '&#127774;' if theme in light_themes else '&#127771;'Configuration
 # For production with reverse proxy, change HOST to "0.0.0.0"
 HOST = "localhost"
 PORT = 8000
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "db", "scooper.db")
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+UPLOADS_DIR = os.path.join(STATIC_DIR, "uploads")
 
 # Authentication configuration for CMS access
 CMS_USERNAME = "admin"
@@ -38,6 +81,7 @@ CMS_PASSWORD = "admin"
 # Ensure directories exist
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 os.makedirs(STATIC_DIR, exist_ok=True)
+os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 
 # ============================================================================
@@ -579,15 +623,41 @@ class ScooperHandler(BaseHTTPRequestHandler):
             
             # Parse form data for POST
             form_data = {}
+            files = {}
             if method == 'POST':
+                content_type = self.headers.get('Content-Type', '')
                 content_length = int(self.headers.get('Content-Length', 0))
+                
                 if content_length > 0:
-                    post_data = self.rfile.read(content_length).decode('utf-8')
-                    form_data = parse_qs(post_data)
-                    simple_form = {}
-                    for k, v in form_data.items():
-                        simple_form[k] = v[0] if len(v) == 1 else v
-                    form_data = simple_form
+                    if 'multipart/form-data' in content_type:
+                        # Parse multipart form data
+                        try:
+                            form = cgi.FieldStorage(
+                                fp=self.rfile,
+                                headers=self.headers,
+                                environ={'REQUEST_METHOD': method}
+                            )
+                            for field in form.list:
+                                if field.filename:
+                                    # File upload field
+                                    files[field.name] = field
+                                else:
+                                    # Regular form field
+                                    form_data[field.name] = field.value
+                        except Exception as e:
+                            print(f"Error parsing multipart: {e}")
+                            form_data = {}
+                    else:
+                        # Parse regular form data
+                        post_data = self.rfile.read(content_length).decode('utf-8')
+                        form_data = parse_qs(post_data)
+                        simple_form = {}
+                        for k, v in form_data.items():
+                            simple_form[k] = v[0] if len(v) == 1 else v
+                        form_data = simple_form
+            
+            # Store files on handler instance for access in handlers
+            self.files = files
             
             # Call handler
             try:
@@ -941,6 +1011,15 @@ def cms_create_handler(path, params, form_data, handler):
     
     if form_data and 'title' in form_data:
         # Process form submission
+        # Handle file upload for featured_image
+        featured_image_path = form_data.get('featured_image', '')
+        if 'featured_image' in handler.files:
+            file_field = handler.files['featured_image']
+            if file_field.filename:
+                saved_path = save_uploaded_file(file_field)
+                if saved_path:
+                    featured_image_path = saved_path
+        
         story_data = {
             'title': form_data['title'],
             'slug': slugify(form_data['title']),
@@ -948,7 +1027,7 @@ def cms_create_handler(path, params, form_data, handler):
             'excerpt': form_data.get('excerpt', ''),
             'author': form_data.get('author', 'Admin'),
             'category': form_data.get('category', 'General'),
-            'featured_image': form_data.get('featured_image', ''),
+            'featured_image': featured_image_path,
             'published': form_data.get('published') == 'on',
             'published_at': datetime.now().isoformat() if form_data.get('published') == 'on' else None,
         }
@@ -1004,6 +1083,15 @@ def cms_edit_handler(path, params, form_data, handler):
     
     if form_data and 'title' in form_data:
         # Process form submission
+        # Handle file upload for featured_image
+        featured_image_path = form_data.get('featured_image', story.get('featured_image', ''))
+        if 'featured_image' in handler.files:
+            file_field = handler.files['featured_image']
+            if file_field.filename:
+                saved_path = save_uploaded_file(file_field)
+                if saved_path:
+                    featured_image_path = saved_path
+        
         story_data = {
             'title': form_data['title'],
             'slug': slugify(form_data['title']),
@@ -1011,7 +1099,7 @@ def cms_edit_handler(path, params, form_data, handler):
             'excerpt': form_data.get('excerpt', ''),
             'author': form_data.get('author', story.get('author', 'Admin')),
             'category': form_data.get('category', story.get('category', 'General')),
-            'featured_image': form_data.get('featured_image', story.get('featured_image', '')),
+            'featured_image': featured_image_path,
             'published': form_data.get('published') == 'on',
             'published_at': datetime.now().isoformat() if form_data.get('published') == 'on' else story.get('published_at'),
         }
