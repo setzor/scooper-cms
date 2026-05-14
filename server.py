@@ -29,17 +29,14 @@ import re
 # HELPERS
 # ============================================================================
 
-def get_theme_icon(theme):
-    """Get the appropriate icon for a theme (sun for light, moon for dark)."""
-    light_themes = ['light', 'rose-pine-dawn', 'catpuccin-latte']
-    return '&#127774;' if theme in light_themes else '&#127771;'
-=======
 # ============================================================================
 # HELPERS
 # ============================================================================
 
-def save_uploaded_file(field, upload_dir=UPLOADS_DIR):
+def save_uploaded_file(field, upload_dir=None):
     """Save an uploaded file to the uploads directory and return the relative path."""
+    if upload_dir is None:
+        upload_dir = UPLOADS_DIR
     if not field or not field.filename:
         return None
     
@@ -54,18 +51,18 @@ def save_uploaded_file(field, upload_dir=UPLOADS_DIR):
     file_path = os.path.join(upload_dir, unique_name)
     
     try:
+        file_content = field.file.read()
         with open(file_path, 'wb') as f:
-            f.write(field.file.read())
+            f.write(file_content)
+        field.file.close()
         # Return relative path from static directory
         return os.path.join('/static/uploads', unique_name)
     except Exception as e:
         print(f"Error saving file: {e}")
         return None
 
-def get_theme_icon(theme):
-    """Get the appropriate icon for a theme (sun for light, moon for dark)."""
-    light_themes = ['light', 'rose-pine-dawn', 'catpuccin-latte']
-    return '&#127774;' if theme in light_themes else '&#127771;'Configuration
+
+
 # For production with reverse proxy, change HOST to "0.0.0.0"
 HOST = "localhost"
 PORT = 8000
@@ -587,7 +584,7 @@ class ScooperHandler(BaseHTTPRequestHandler):
     def handle_request(self, method):
         """Handle HTTP request with routing."""
         parsed = urlparse(self.path)
-        path = parsed.path
+        path = unquote(parsed.path)
         
         # Remove trailing slash for consistency
         if path.endswith('/') and path != '/':
@@ -678,15 +675,20 @@ class ScooperHandler(BaseHTTPRequestHandler):
             try:
                 response = handler(path, simple_params, form_data, self)
                 if isinstance(response, tuple):
-                    status_code = response[1] if len(response) > 1 else 200
                     content = response[0]
-                    self.send_response(status_code)
+                    status_code = response[1] if len(response) > 1 else 200
+                    custom_headers = response[2] if len(response) > 2 and isinstance(response[2], dict) else {}
                 else:
-                    self.send_response(200)
                     content = response
+                    status_code = 200
+                    custom_headers = {}
                 
-                content_type = 'application/json' if isinstance(content, (dict, list)) else 'text/html; charset=utf-8'
-                self.send_header('Content-Type', content_type)
+                self.send_response(status_code)
+                for h_name, h_value in custom_headers.items():
+                    self.send_header(h_name, h_value)
+                if 'Content-Type' not in custom_headers:
+                    content_type = 'application/json' if isinstance(content, (dict, list)) else 'text/html; charset=utf-8'
+                    self.send_header('Content-Type', content_type)
                 self.end_headers()
                 
                 if isinstance(content, (dict, list)):
@@ -1077,10 +1079,7 @@ def cms_create_handler(path, params, form_data, handler):
         
         create_story(story_data)
         # Redirect to stories list
-        handler.send_response(302)
-        handler.send_header('Location', '/cms/stories')
-        handler.end_headers()
-        return '', 302
+        return '', 302, {'Location': '/cms/stories'}
     
     # Get categories from DB and merge with defaults
     db_categories = get_all_categories()
@@ -1149,10 +1148,7 @@ def cms_edit_handler(path, params, form_data, handler):
         
         update_story(story_id, story_data)
         # Redirect to stories list
-        handler.send_response(302)
-        handler.send_header('Location', '/cms/stories')
-        handler.end_headers()
-        return '', 302
+        return '', 302, {'Location': '/cms/stories'}
     
     categories = get_all_categories()
     theme_icon = get_theme_icon(theme)
@@ -1192,10 +1188,7 @@ def cms_delete_handler(path, params, form_data, handler):
     story_id = parts[-1] if parts else ''
     
     delete_story(story_id)
-    handler.send_response(302)
-    handler.send_header('Location', '/cms/stories')
-    handler.end_headers()
-    return '', 302
+    return '', 302, {'Location': '/cms/stories'}
 
 
 def cms_preview_handler(path, params, form_data, handler):
@@ -1263,10 +1256,7 @@ def cms_settings_handler(path, params, form_data, handler):
             category_id = form_data['delete_category_id']
             delete_category(category_id)
         
-        handler.send_response(302)
-        handler.send_header('Location', '/cms/settings')
-        handler.end_headers()
-        return '', 302
+        return '', 302, {'Location': '/cms/settings'}
     
     theme_icon = get_theme_icon(theme)
     
