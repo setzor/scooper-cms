@@ -33,13 +33,14 @@ def get_theme_icon(theme):
     """Get the appropriate icon for a theme (sun for light, moon for dark)."""
     light_themes = ['light', 'rose-pine-dawn', 'catpuccin-latte']
     return '&#127774;' if theme in light_themes else '&#127771;'
-=======
 # ============================================================================
 # HELPERS
 # ============================================================================
 
-def save_uploaded_file(field, upload_dir=UPLOADS_DIR):
+def save_uploaded_file(field, upload_dir=None):
     """Save an uploaded file to the uploads directory and return the relative path."""
+    if upload_dir is None:
+        upload_dir = UPLOADS_DIR
     if not field or not field.filename:
         return None
     
@@ -65,7 +66,9 @@ def save_uploaded_file(field, upload_dir=UPLOADS_DIR):
 def get_theme_icon(theme):
     """Get the appropriate icon for a theme (sun for light, moon for dark)."""
     light_themes = ['light', 'rose-pine-dawn', 'catpuccin-latte']
-    return '&#127774;' if theme in light_themes else '&#127771;'Configuration
+    return '&#127774;' if theme in light_themes else '&#127771;' 
+
+
 # For production with reverse proxy, change HOST to "0.0.0.0"
 HOST = "localhost"
 PORT = 8000
