@@ -186,6 +186,104 @@
                 input.click();
             });
         });
+        
+        // ==========================================================================
+        // Auto-save draft to localStorage
+        // ==========================================================================
+        (function() {
+            var storyId = '{{ story.id }}';
+            var draftKey = 'scooper-draft-' + storyId;
+            var saveInterval = 30000; // 30 seconds
+            var saveTimeout;
+            
+            // Get all form data as an object
+            function getFormData() {
+                var quill = window.quill;
+                return {
+                    title: document.getElementById('title').value,
+                    excerpt: document.getElementById('excerpt').value,
+                    content: quill ? quill.root.innerHTML : document.getElementById('content').value,
+                    author: document.getElementById('author').value,
+                    category: document.getElementById('category').value,
+                    published: document.querySelector('input[name="published"]').checked
+                };
+            }
+            
+            // Save draft to localStorage
+            function saveDraft() {
+                var data = getFormData();
+                localStorage.setItem(draftKey, JSON.stringify({
+                    data: data,
+                    timestamp: Date.now()
+                }));
+                console.log('Draft saved at', new Date().toLocaleTimeString());
+            }
+            
+            // Load draft from localStorage
+            function loadDraft() {
+                var saved = localStorage.getItem(draftKey);
+                if (!saved) return;
+                
+                try {
+                    var draft = JSON.parse(saved);
+                    var data = draft.data;
+                    
+                    // Only auto-restore if the form is empty (new edit session)
+                    // or if the draft is more recent than the story's last save
+                    var titleEmpty = !document.getElementById('title').value || 
+                                     document.getElementById('title').value === '{{ story.title }}';
+                    
+                    // For edit page, check if the user is coming back to a draft
+                    // Simple heuristic: if title matches the original, it might be a fresh load
+                    if (titleEmpty) {
+                        if (confirm('We found a draft of this story from ' + 
+                                     new Date(draft.timestamp).toLocaleString() + '. Restore it?')) {
+                            document.getElementById('title').value = data.title || '';
+                            document.getElementById('excerpt').value = data.excerpt || '';
+                            if (window.quill) {
+                                window.quill.clipboard.dangerouslyPasteHTML(data.content || '');
+                            } else {
+                                document.getElementById('content').value = data.content || '';
+                            }
+                            document.getElementById('author').value = data.author || '';
+                            document.getElementById('category').value = data.category || '';
+                            if (data.published !== undefined) {
+                                document.querySelector('input[name="published"]').checked = data.published;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error loading draft:', e);
+                }
+            }
+            
+            // Start auto-save
+            function startAutoSave() {
+                saveDraft(); // Save immediately on load
+                saveTimeout = setInterval(saveDraft, saveInterval);
+            }
+            
+            // Stop auto-save
+            function stopAutoSave() {
+                if (saveTimeout) {
+                    clearInterval(saveTimeout);
+                    saveTimeout = null;
+                }
+            }
+            
+            // Clear draft on successful submission
+            var form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function() {
+                    stopAutoSave();
+                    localStorage.removeItem(draftKey);
+                });
+            }
+            
+            // Initialize
+            loadDraft();
+            startAutoSave();
+        })();
     </script>
 </body>
 </html>

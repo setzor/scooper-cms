@@ -174,6 +174,101 @@
                 input.click();
             });
         });
+        
+        // ==========================================================================
+        // Auto-save draft to localStorage
+        // ==========================================================================
+        (function() {
+            var draftKey = 'scooper-draft-new';
+            var saveInterval = 30000; // 30 seconds
+            var saveTimeout;
+            
+            // Get all form data as an object
+            function getFormData() {
+                var quill = window.quill;
+                return {
+                    title: document.getElementById('title').value,
+                    excerpt: document.getElementById('excerpt').value,
+                    content: quill ? quill.root.innerHTML : document.getElementById('content').value,
+                    author: document.getElementById('author').value,
+                    category: document.getElementById('category').value,
+                    published: document.querySelector('input[name="published"]').checked
+                };
+            }
+            
+            // Save draft to localStorage
+            function saveDraft() {
+                var data = getFormData();
+                // Only save if title is not empty (basic validation)
+                if (data.title && data.title.trim()) {
+                    localStorage.setItem(draftKey, JSON.stringify({
+                        data: data,
+                        timestamp: Date.now()
+                    }));
+                    console.log('Draft saved at', new Date().toLocaleTimeString());
+                }
+            }
+            
+            // Load draft from localStorage
+            function loadDraft() {
+                var saved = localStorage.getItem(draftKey);
+                if (!saved) return;
+                
+                try {
+                    var draft = JSON.parse(saved);
+                    var data = draft.data;
+                    
+                    // Always ask before restoring on create page
+                    if (confirm('We found a draft story from ' + 
+                                 new Date(draft.timestamp).toLocaleString() + '. Restore it?')) {
+                        document.getElementById('title').value = data.title || '';
+                        document.getElementById('excerpt').value = data.excerpt || '';
+                        if (window.quill) {
+                            window.quill.clipboard.dangerouslyPasteHTML(data.content || '');
+                        } else {
+                            document.getElementById('content').value = data.content || '';
+                        }
+                        document.getElementById('author').value = data.author || '';
+                        document.getElementById('category').value = data.category || '';
+                        if (data.published !== undefined) {
+                            document.querySelector('input[name="published"]').checked = data.published;
+                        }
+                    } else {
+                        // User declined, clear the draft
+                        localStorage.removeItem(draftKey);
+                    }
+                } catch (e) {
+                    console.error('Error loading draft:', e);
+                }
+            }
+            
+            // Start auto-save
+            function startAutoSave() {
+                saveDraft();
+                saveTimeout = setInterval(saveDraft, saveInterval);
+            }
+            
+            // Stop auto-save
+            function stopAutoSave() {
+                if (saveTimeout) {
+                    clearInterval(saveTimeout);
+                    saveTimeout = null;
+                }
+            }
+            
+            // Clear draft on successful submission
+            var form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function() {
+                    stopAutoSave();
+                    localStorage.removeItem(draftKey);
+                });
+            }
+            
+            // Initialize
+            loadDraft();
+            startAutoSave();
+        })();
     </script>
 </body>
 </html>
