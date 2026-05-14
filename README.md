@@ -211,50 +211,16 @@ Scooper CMS is free to use for any purpose and is licensed with the MIT License.
 ---
 
 <div align="center">
-  <svg width="200" height="150" viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
-    <style>
-      .tail { transform-origin: 40px 80px; animation: wag 1.5s ease-in-out infinite; }
-      .ear-left { transform-origin: 65px 45px; animation: twitch 3s ease-in-out infinite; }
-      .ear-right { transform-origin: 135px 45px; animation: twitch 3s ease-in-out infinite 0.2s; }
-      .eye { animation: blink 4s infinite; }
-      @keyframes wag {
-        0%, 100% { transform: rotate(-10deg); }
-        50% { transform: rotate(10deg); }
-      }
-      @keyframes twitch {
-        0%, 100% { transform: rotate(0deg); }
-        50% { transform: rotate(5deg); }
-      }
-      @keyframes blink {
-        0%, 45%, 55%, 100% { opacity: 1; }
-        50% { opacity: 0; }
-      }
-    </style>
-    <g transform="translate(80, 30)">
-      <!-- Tail -->
-      <path class="tail" d="M0,60 Q20,40 40,60" stroke="#000" stroke-width="4" fill="none"/>
-      <!-- Body -->
-      <ellipse cx="80" cy="80" rx="60" ry="40" fill="#f5a358" stroke="#000" stroke-width="2"/>
-      <!-- Head -->
-      <circle cx="140" cy="60" r="35" fill="#f5a358" stroke="#000" stroke-width="2"/>
-      <!-- Ears -->
-      <path class="ear-left" d="M125,35 L140,25 L155,35 Z" fill="#f5a358" stroke="#000" stroke-width="2"/>
-      <path class="ear-right" d="M145,35 L160,25 L175,35 Z" fill="#f5a358" stroke="#000" stroke-width="2"/>
-      <!-- Eyes -->
-      <circle class="eye" cx="130" cy="55" r="5" fill="#000"/>
-      <circle class="eye" cx="150" cy="55" r="5" fill="#000"/>
-      <!-- Nose -->
-      <polygon points="140,65 135,70 145,70" fill="#ff6b6b"/>
-      <!-- Whiskers -->
-      <line x1="130" y1="65" x2="110" y2="65" stroke="#000" stroke-width="1"/>
-      <line x1="130" y1="68" x2="110" y2="68" stroke="#000" stroke-width="1"/>
-      <line x1="150" y1="65" x2="170" y2="65" stroke="#000" stroke-width="1"/>
-      <line x1="150" y1="68" x2="170" y2="68" stroke="#000" stroke-width="1"/>
-      <!-- Paws -->
-      <circle cx="60" cy="110" r="8" fill="#f5a358" stroke="#000" stroke-width="2"/>
-      <circle cx="100" cy="110" r="8" fill="#f5a358" stroke="#000" stroke-width="2"/>
-    </g>
-  </svg>
+  <pre>
+    ( •_•)
+    <)   ]
+    /    \
+     \__/\_
+     (•.•)
+     /   \
+    (     )
+   (_____)
+  </pre>
+  
+  <em>Stay cozy and keep writing wonderful stories</em>
 </div>
-
-*Happy coding! ✨*
