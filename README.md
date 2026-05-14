@@ -211,17 +211,9 @@ Scooper CMS is free to use for any purpose and is licensed with the MIT License.
 ---
 
 <div align="center">
-  <svg width="100" height="80" viewBox="0 0 100 80">
-    <circle cx="30" cy="40" r="15" fill="#f5a358"/>
-    <circle cx="70" cy="40" r="15" fill="#f5a358"/>
-    <circle cx="25" cy="35" r="3" fill="#000"/>
-    <circle cx="75" cy="35" r="3" fill="#000"/>
-    <path d="M20,50 Q50,65 80,50" stroke="#000" stroke-width="2" fill="none"/>
-    <circle cx="45" cy="55" r="2" fill="#ff6b6b"/>
-    <circle cx="55" cy="55" r="2" fill="#ff6b6b"/>
-    <line x1="40" y1="45" x2="30" y2="40" stroke="#000" stroke-width="1"/>
-    <line x1="60" y1="45" x2="70" y2="40" stroke="#000" stroke-width="1"/>
-  </svg>
   
-  <em>Stay cozy and keep writing wonderful stories</em>
+  ![Cute cat](https://media.tenor.com/8G1t26JRYskAAAAM/hi-black-cat.gif)
+
+  *Stay cozy and keep writing wonderful stories*
+
 </div>
