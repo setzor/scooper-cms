@@ -18,7 +18,7 @@ import sys
 import sqlite3
 import json
 import base64
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs, unquote
 from datetime import datetime
 import re
@@ -1282,7 +1282,7 @@ def main():
     
     # Start server
     server_address = (HOST, PORT)
-    httpd = HTTPServer(server_address, ScooperHandler)
+    httpd = ThreadingHTTPServer(server_address, ScooperHandler)
     
     print(f"\n{'='*60}")
     print(f"  Scooper CMS - Content Management Platform")
