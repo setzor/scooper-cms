@@ -158,8 +158,8 @@ def get_db():
 # MODELS
 # ============================================================================
 
-def get_all_stories(published_only=False, search=None, category=None, status=None, month=None):
-    """Get all stories with optional filtering.
+def get_all_stories(published_only=False, search=None, category=None, status=None, month=None, page=1, per_page=10):
+    """Get all stories with optional filtering and pagination.
     
     Args:
         published_only: Only return published stories
@@ -167,6 +167,11 @@ def get_all_stories(published_only=False, search=None, category=None, status=Non
         category: Filter by category name
         status: Filter by status ('published', 'draft', or None for all)
         month: Filter by month (YYYY-MM format)
+        page: Page number for pagination (1-based)
+        per_page: Number of stories per page
+    
+    Returns:
+        tuple: (stories, total_count) - list of stories and total count for pagination
     """
     conn = get_db()
     
@@ -196,14 +201,24 @@ def get_all_stories(published_only=False, search=None, category=None, status=Non
         conditions.append("(strftime('%Y-%m', published_at) = ? OR strftime('%Y-%m', created_at) = ?)")
         params.extend([month, month])
     
-    # Build query
+    # Build query for counting total
     where_clause = " AND ".join(conditions) if conditions else "1=1"
-    order_clause = "ORDER BY published_at DESC, created_at DESC"
     
-    cursor = conn.execute(f"SELECT * FROM stories WHERE {where_clause} {order_clause}", params)
+    # Get total count
+    count_cursor = conn.execute(f"SELECT COUNT(*) FROM stories WHERE {where_clause}", params)
+    total_count = count_cursor.fetchone()[0]
+    
+    # Build query with pagination
+    order_clause = "ORDER BY published_at DESC, created_at DESC"
+    offset = (page - 1) * per_page
+    
+    cursor = conn.execute(
+        f"SELECT * FROM stories WHERE {where_clause} {order_clause} LIMIT ? OFFSET ?",
+        params + [per_page, offset]
+    )
     stories = [dict(row) for row in cursor.fetchall()]
     conn.close()
-    return stories
+    return stories, total_count
 
 
 def get_story_by_id(story_id):
@@ -740,7 +755,9 @@ class ScooperHandler(BaseHTTPRequestHandler):
 def paper_home_handler(path, params, form_data, handler):
     """Handle the paper homepage."""
     theme = get_setting('theme', 'light')
-    stories = get_all_stories(published_only=True)
+    # Get page from query params, default to 1
+    page = int(params.get('page', 1))
+    stories, total_count = get_all_stories(published_only=True, page=page, per_page=10)
     
     site_title = get_setting('site_title', 'Scooper Paper')
     site_description = get_setting('site_description', 'Your News, Delivered')
@@ -760,12 +777,22 @@ def paper_home_handler(path, params, form_data, handler):
     
     theme_icon = get_theme_icon(theme)
     
+    # Pagination info
+    total_pages = (total_count + 9) // 10  # Ceiling division
+    
     context = {
         'site_title': site_title,
         'site_description': site_description,
         'theme': theme,
         'theme_icon': theme_icon,
         'stories': formatted_stories,
+        'pagination': {
+            'current_page': page,
+            'total_pages': total_pages,
+            'total_count': total_count,
+            'has_previous': page > 1,
+            'has_next': page < total_pages,
+        },
     }
     
     return render_template('paper/index.html', context)
@@ -809,12 +836,13 @@ def paper_story_handler(path, params, form_data, handler):
 def cms_dashboard_handler(path, params, form_data, handler):
     """Handle CMS dashboard."""
     theme = get_setting('theme', 'light')
-    stories = get_all_stories()
+    # Get first page for dashboard (shows recent stories)
+    stories, total_count = get_all_stories(page=1, per_page=5)
     
     published_count = sum(1 for s in stories if s.get('published', False))
     
     formatted_stories = []
-    for story in stories[:5]:  # Recent 5 stories
+    for story in stories:
         formatted_stories.append({
             'id': story['id'],
             'title': story['title'],
@@ -827,7 +855,7 @@ def cms_dashboard_handler(path, params, form_data, handler):
         'theme': theme,
         'theme_icon': get_theme_icon(theme),
         'stories': stories,
-        'total_stories': len(stories),
+        'total_stories': total_count,
         'published_count': published_count,
         'recent_stories': formatted_stories,
     }
@@ -844,14 +872,18 @@ def cms_stories_handler(path, params, form_data, handler):
     category_filter = params.get('category', '').strip()
     status_filter = params.get('status', '').strip()  # 'published', 'draft', or empty
     month_filter = params.get('month', '').strip()
+    page = int(params.get('page', 1))
+    per_page = 10
     
-    # Get stories with filters
-    stories = get_all_stories(
+    # Get stories with filters and pagination
+    stories, total_count = get_all_stories(
         published_only=False,
         search=search_query if search_query else None,
         category=category_filter if category_filter else None,
         status=status_filter if status_filter in ('published', 'draft') else None,
-        month=month_filter if month_filter else None
+        month=month_filter if month_filter else None,
+        page=page,
+        per_page=per_page
     )
     
     # Get all available categories for filter dropdown
@@ -981,6 +1013,9 @@ def cms_stories_handler(path, params, form_data, handler):
     
     active_filter_query = build_filter_query()
     
+    # Pagination info
+    total_pages = (total_count + per_page - 1) // per_page  # Ceiling division
+    
     context = {
         'site_title': get_setting('site_title', 'Scooper'),
         'page_title': 'All Stories',
@@ -999,7 +1034,15 @@ def cms_stories_handler(path, params, form_data, handler):
         'active_filter_query': active_filter_query,
         'has_filters': bool(search_query or category_filter or status_filter or month_filter),
         'active_filter_tags': active_filter_tags,
-        'total_count': len(formatted_stories),
+        'total_count': total_count,
+        'pagination': {
+            'current_page': page,
+            'per_page': per_page,
+            'total_pages': total_pages,
+            'total_count': total_count,
+            'has_previous': page > 1,
+            'has_next': page < total_pages,
+        },
     }
     
     return render_template('cms/stories.html', context)

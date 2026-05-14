@@ -1720,3 +1720,80 @@ img {
 .mb-2 { margin-bottom: 1rem; }
 .mb-3 { margin-bottom: 1.5rem; }
 .mb-4 { margin-bottom: 2rem; }
+
+/* ==========================================================================
+   Pagination
+   ========================================================================== */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.pagination .page-link {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    color: var(--paper-link-color, var(--cms-text, #1a1a1a));
+    border: 1px solid var(--paper-card-border, var(--cms-border, #e0e0e0));
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.pagination .page-link:hover {
+    background-color: var(--paper-card-border, var(--cms-border, #e0e0e0));
+    color: var(--paper-link-hover, var(--cms-text, #1a1a1a));
+}
+
+.pagination .page-link.current {
+    background-color: var(--btn-primary-bg, #0066cc);
+    color: var(--btn-primary-text, #ffffff);
+    border-color: var(--btn-primary-bg, #0066cc);
+    cursor: default;
+}
+
+.pagination .page-link.ellipsis {
+    border: none;
+    pointer-events: none;
+    color: var(--paper-text-muted, var(--cms-text-secondary, #555555));
+}
+
+.pagination .page-link.prev,
+.pagination .page-link.next {
+    padding: 0.5rem 1.5rem;
+}
+
+/* Dark theme pagination */
+[data-theme="dark"] .pagination .page-link {
+    color: var(--cms-sidebar-text, #cccccc);
+    border-color: var(--cms-sidebar-hover, #3a3a3a);
+}
+
+[data-theme="dark"] .pagination .page-link:hover {
+    background-color: var(--cms-sidebar-hover, #3a3a3a);
+    color: var(--cms-sidebar-text, #cccccc);
+}
+
+[data-theme="dark"] .pagination .page-link.current {
+    background-color: var(--cms-sidebar-active, #4d90fe);
+    color: var(--cms-sidebar-bg, #1a1a1a);
+    border-color: var(--cms-sidebar-active, #4d90fe);
+}
+
+/* CMS pagination */
+.cms-pagination {
+    margin: 1.5rem 0;
+}
+
+.cms-pagination .page-link {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+}
+
+.cms-pagination .page-link.prev,
+.cms-pagination .page-link.next {
+    padding: 0.4rem 1.2rem;
+}
