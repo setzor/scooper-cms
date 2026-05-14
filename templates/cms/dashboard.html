@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - {{ site_title }}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="theme-{{ theme }} cms-theme" data-theme="{{ theme }}">
+    <div class="cms-layout">
+        <!-- Sidebar -->
+        <nav class="cms-sidebar">
+            <div class="cms-logo">
+                <a href="/">
+                    <span class="logo-icon">&#128241;</span>
+                    <span class="logo-text">Scooper</span>
+                </a>
+            </div>
+            <ul class="cms-nav">
+                <li><a href="/cms/dashboard" class="nav-item active">
+                    <span class="nav-icon">&#128196;</span>
+                    <span>Dashboard</span>
+                </a></li>
+                <li><a href="/cms/stories" class="nav-item">
+                    <span class="nav-icon">&#128218;</span>
+                    <span>Stories</span>
+                </a></li>
+                <li><a href="/cms/create" class="nav-item">
+                    <span class="nav-icon">&#9998;</span>
+                    <span>New Story</span>
+                </a></li>
+                <li><a href="/cms/settings" class="nav-item">
+                    <span class="nav-icon">&#9881;</span>
+                    <span>Settings</span>
+                </a></li>
+            </ul>
+            <div class="cms-footer">
+                <a href="/" class="view-paper-btn" target="_blank">
+                    <span class="nav-icon">&#128240;</span>
+                    <span>View Paper</span>
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="cms-main">
+            <header class="cms-header">
+                <div class="header-left">
+                    <h1>{{ page_title }}</h1>
+                </div>
+                <div class="header-right">
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">
+                        <span id="theme-icon">{{ theme_icon }}</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="cms-content">
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h2>Total Stories</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="stat-number">{{ total_stories }}</div>
+                            <p class="stat-label">Articles in database</p>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h2>Published</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="stat-number">{{ published_count }}</div>
+                            <p class="stat-label">Live on the site</p>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h2>Categories</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="stat-number">7</div>
+                            <p class="stat-label">News categories</p>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-card recent-stories">
+                        <div class="card-header">
+                            <h2>Recent Stories</h2>
+                        </div>
+                        <div class="card-body">
+                            <ul class="recent-list">
+                                {% for story in recent_stories %}
+                                <li>
+                                    <a href="/cms/edit/{{ story.id }}">{{ story.title }}</a>
+                                    {% if story.published %}
+                                    <span class="story-status published">Published</span>
+                                    {% else %}
+                                    <span class="story-status draft">Draft</span>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-actions">
+                    <a href="/cms/create" class="btn btn-primary">
+                        <span>&#10010;</span> Create New Story
+                    </a>
+                    <a href="/cms/stories" class="btn btn-secondary">
+                        <span>&#128218;</span> View All Stories
+                    </a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/script.js"></script>
+</body>
+</html>

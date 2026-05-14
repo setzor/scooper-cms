@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- This template is rendered by server.py - all {{ variables }} are replaced with actual values -->
+    <title>{{ story.title }} - {{ site_title }}</title>
+    <meta name="description" content="{{ story.excerpt }}">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lora:wght@400;600&family=Source+Serif+Pro:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body class="theme-{{ theme }}" data-theme="{{ theme }}">
+    <div class="paper-layout">
+        <!-- Header -->
+        <header class="paper-header">
+            <div class="header-container">
+                <div class="logo">
+                    <a href="/">{{ site_title }}</a>
+                </div>
+                <p class="tagline">{{ site_description }}</p>
+            </div>
+            <nav class="paper-nav">
+                <button class="theme-toggle paper-theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">
+                    <span id="theme-icon">{{ theme_icon }}</span>
+                </button>
+                <a href="/cms" class="cms-link">
+                    <span>&#9881;</span> CMS
+                </a>
+            </nav>
+        </header>
+
+        <!-- Main Content -->
+        <main class="paper-main">
+            <div class="container">
+                <article class="single-story">
+                    <div class="story-header">
+                        <span class="category-tag">{{ story.category }}</span>
+                        <h1 class="story-title">{{ story.title }}</h1>
+                        <div class="story-meta">
+                            <span class="date">Published: {{ story.published_at }}</span>
+                            <span class="author">By {{ story.author }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="story-content">
+                        {{ story.content }}
+                    </div>
+                    
+                    {% if is_preview %}
+                    <div class="preview-notice">
+                        <p><em>This is a preview. <a href="/cms/stories">Return to CMS</a></em></p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="story-footer">
+                        <a href="/" class="back-link">&laquo; Back to all stories</a>
+                    </div>
+                </article>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="paper-footer">
+            <div class="footer-container">
+                <p>&copy; 2024 {{ site_title }}. All rights reserved.</p>
+                <div class="footer-links">
+                    <a href="/cms" class="footer-cms-link">CMS Admin</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="/static/js/script.js"></script>
+</body>
+</html>

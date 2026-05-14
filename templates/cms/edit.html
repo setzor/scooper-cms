@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - {{ site_title }}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Quill Rich Text Editor - Open Source, MIT License, No Ads -->
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+</head>
+<body class="theme-{{ theme }} cms-theme" data-theme="{{ theme }}">
+    <div class="cms-layout">
+        <!-- Sidebar -->
+        <nav class="cms-sidebar">
+            <div class="cms-logo">
+                <a href="/">
+                    <span class="logo-icon">&#128241;</span>
+                    <span class="logo-text">Scooper</span>
+                </a>
+            </div>
+            <ul class="cms-nav">
+                <li><a href="/cms/dashboard" class="nav-item">
+                    <span class="nav-icon">&#128196;</span>
+                    <span>Dashboard</span>
+                </a></li>
+                <li><a href="/cms/stories" class="nav-item">
+                    <span class="nav-icon">&#128218;</span>
+                    <span>Stories</span>
+                </a></li>
+                <li><a href="/cms/create" class="nav-item">
+                    <span class="nav-icon">&#9998;</span>
+                    <span>New Story</span>
+                </a></li>
+                <li><a href="/cms/settings" class="nav-item">
+                    <span class="nav-icon">&#9881;</span>
+                    <span>Settings</span>
+                </a></li>
+            </ul>
+            <div class="cms-footer">
+                <a href="/" class="view-paper-btn" target="_blank">
+                    <span class="nav-icon">&#128240;</span>
+                    <span>View Paper</span>
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="cms-main">
+            <header class="cms-header">
+                <div class="header-left">
+                    <h1>{{ page_title }}</h1>
+                </div>
+                <div class="header-right">
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">
+                        <span id="theme-icon">{{ theme_icon }}</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="cms-content">
+                <form action="/cms/edit/{{ story.id }}" method="post" class="story-form">
+                    <div class="form-group">
+                        <label for="title">Title *</label>
+                        <input type="text" id="title" name="title" value="{{ story.title }}" required placeholder="Enter story title">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="excerpt">Excerpt</label>
+                        <textarea id="excerpt" name="excerpt" rows="3" placeholder="Short summary of the story (optional)">{{ story.excerpt }}</textarea>
+                        <p class="hint">This appears on the homepage. Leave blank to use first part of content.</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="content">Content *</label>
+                        <textarea id="content" name="content" style="display:none;">{{ story.content }}</textarea>
+                        <div id="quill-editor" style="height: 500px; margin-bottom: 10px;"></div>
+                        <p class="hint">Rich text editor with support for images, formatting, lists, and more.</p>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="author">Author</label>
+                            <input type="text" id="author" name="author" value="{{ story.author }}" placeholder="Author name">
+                        </div>
+                        <div class="form-group">
+                            <label for="category">Category</label>
+                            <select id="category" name="category">
+                                {% for cat in categories %}
+                                <option value="{{ cat.name }}" {% if cat.name == story.category %}selected{% endif %}>{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="featured_image">Featured Image URL</label>
+                        <input type="url" id="featured_image" name="featured_image" value="{{ story.featured_image }}" placeholder="https://example.com/image.jpg">
+                    </div>
+
+                    <div class="form-group publish-group">
+                        <label>
+                            <input type="checkbox" name="published" value="on" {% if story.published %}checked{% endif %}>
+                            <span class="checkbox-label">Publish immediately</span>
+                        </label>
+                        <p class="hint">Uncheck to save as draft.</p>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <span>&#10003;</span> Update Story
+                        </button>
+                        <a href="/cms/preview/{{ story.id }}" class="btn btn-secondary" target="_blank">
+                            <span>&#128065;</span> Preview
+                        </a>
+                        <a href="/cms/stories" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/script.js"></script>
+    <script>
+        // Initialize Quill Editor with existing content
+        document.addEventListener('DOMContentLoaded', function() {
+            var contentTextarea = document.getElementById('content');
+            var quill = new Quill('#quill-editor', {
+                theme: 'snow',
+                placeholder: 'Write your story here...',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                        [{ 'script': 'sub' }, { 'script': 'super' }],
+                        [{ 'indent': '-1' }, { 'indent': '+1' }],
+                        [{ 'direction': 'rtl' }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'font': [] }],
+                        [{ 'align': [] }],
+                        ['link', 'image', 'video'],
+                        ['clean']
+                    ]
+                }
+            });
+            
+            // Load existing content
+            if (contentTextarea) {
+                quill.clipboard.dangerouslyPasteHTML(contentTextarea.value);
+            }
+            
+            // Sync Quill content to hidden textarea before form submission
+            var form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function() {
+                    contentTextarea.value = quill.root.innerHTML;
+                });
+            }
+            
+            // Handle image uploads
+            quill.getModule('toolbar').addHandler('image', function() {
+                var input = document.createElement('input');
+                input.setAttribute('type', 'file');
+                input.setAttribute('accept', 'image/*');
+                input.onchange = function() {
+                    var file = this.files[0];
+                    if (file) {
+                        var reader = new FileReader();
+                        reader.onload = function(e) {
+                            var range = quill.getSelection();
+                            quill.insertEmbed(range.index, 'image', e.target.result);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                };
+                input.click();
+            });
+        });
+    </script>
+</body>
+</html>

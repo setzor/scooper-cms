@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - {{ site_title }}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="theme-{{ theme }} cms-theme" data-theme="{{ theme }}">
+    <div class="cms-layout">
+        <!-- Sidebar -->
+        <nav class="cms-sidebar">
+            <div class="cms-logo">
+                <a href="/">
+                    <span class="logo-icon">&#128241;</span>
+                    <span class="logo-text">Scooper</span>
+                </a>
+            </div>
+            <ul class="cms-nav">
+                <li><a href="/cms/dashboard" class="nav-item">
+                    <span class="nav-icon">&#128196;</span>
+                    <span>Dashboard</span>
+                </a></li>
+                <li><a href="/cms/stories" class="nav-item">
+                    <span class="nav-icon">&#128218;</span>
+                    <span>Stories</span>
+                </a></li>
+                <li><a href="/cms/create" class="nav-item">
+                    <span class="nav-icon">&#9998;</span>
+                    <span>New Story</span>
+                </a></li>
+                <li><a href="/cms/settings" class="nav-item active">
+                    <span class="nav-icon">&#9881;</span>
+                    <span>Settings</span>
+                </a></li>
+            </ul>
+            <div class="cms-footer">
+                <a href="/" class="view-paper-btn" target="_blank">
+                    <span class="nav-icon">&#128240;</span>
+                    <span>View Paper</span>
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="cms-main">
+            <header class="cms-header">
+                <div class="header-left">
+                    <h1>{{ page_title }}</h1>
+                </div>
+                <div class="header-right">
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">
+                        <span id="theme-icon">{{ theme_icon }}</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="cms-content">
+                <form action="/cms/settings" method="post" class="settings-form">
+                    <div class="settings-section">
+                        <h2>Site Settings</h2>
+                        
+                        <div class="form-group">
+                            <label for="site_title">Site Title</label>
+                            <input type="text" id="site_title" name="site_title" value="{{ site_title }}" required placeholder="Your site name">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="site_description">Site Description</label>
+                            <input type="text" id="site_description" name="site_description" value="{{ site_description }}" placeholder="Short tagline for your site">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Theme</label>
+                            <div class="theme-options">
+                                <label class="theme-option">
+                                    <input type="radio" name="theme" value="light" {% if theme == 'light' %}checked{% endif %}>
+                                    <span>Light</span>
+                                </label>
+                                <label class="theme-option">
+                                    <input type="radio" name="theme" value="dark" {% if theme == 'dark' %}checked{% endif %}>
+                                    <span>Dark</span>
+                                </label>
+                                <label class="theme-option">
+                                    <input type="radio" name="theme" value="rose-pine-dawn" {% if theme == 'rose-pine-dawn' %}checked{% endif %}>
+                                    <span>Rose Pine Dawn</span>
+                                </label>
+                                <label class="theme-option">
+                                    <input type="radio" name="theme" value="rose-pine" {% if theme == 'rose-pine' %}checked{% endif %}>
+                                    <span>Rose Pine</span>
+                                </label>
+                                <label class="theme-option">
+                                    <input type="radio" name="theme" value="catpuccin-latte" {% if theme == 'catpuccin-latte' %}checked{% endif %}>
+                                    <span>Catpuccin Latte</span>
+                                </label>
+                                <label class="theme-option">
+                                    <input type="radio" name="theme" value="catpuccin-frappe" {% if theme == 'catpuccin-frappe' %}checked{% endif %}>
+                                    <span>Catpuccin Frappe</span>
+                                </label>
+                                <label class="theme-option">
+                                    <input type="radio" name="theme" value="catpuccin-macchiato" {% if theme == 'catpuccin-macchiato' %}checked{% endif %}>
+                                    <span>Catpuccin Macchiato</span>
+                                </label>
+                                <label class="theme-option">
+                                    <input type="radio" name="theme" value="catpuccin-mocha" {% if theme == 'catpuccin-mocha' %}checked{% endif %}>
+                                    <span>Catpuccin Mocha</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h2>Categories</h2>
+                        <input type="hidden" id="action" name="action">
+                        
+                        <div class="form-group">
+                            <label for="new_category">Add New Category</label>
+                            <div class="category-add">
+                                <input type="text" id="new_category" name="new_category" placeholder="Enter category name">
+                                <button type="button" class="btn btn-small btn-primary" onclick="setAction('add_category'); document.querySelector('form').submit();">
+                                    <span>&#10010;</span> Add
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {% if categories %}
+                        <div class="form-group">
+                            <label>Existing Categories</label>
+                            <div class="category-list">
+                                {% for cat in categories %}
+                                <div class="category-item">
+                                    <span class="category-name">{{ cat.name }}</span>
+                                    <div class="category-actions">
+                                        <button type="button" class="btn btn-tiny btn-secondary edit-category-btn" 
+                                                data-category-id="{{ cat.id }}" data-category-name="{{ cat.name }}">
+                                            <span>&#9998;</span> Edit
+                                        </button>
+                                        <button type="button" class="btn btn-tiny btn-danger delete-category-btn" 
+                                                data-category-id="{{ cat.id }}" 
+                                                onclick="return confirm('Are you sure you want to delete this category? Stories using this category will keep their category name as text.')">
+                                            <span>&#128465;</span> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if not categories %}
+                        <p class="hint">No categories yet. Add your first category above.</p>
+                        {% endif %}
+                        
+                        <!-- Hidden fields for category edit/delete -->
+                        <input type="hidden" id="edit_category_id" name="edit_category_id">
+                        <input type="hidden" id="edit_category_name" name="edit_category_name">
+                        <input type="hidden" id="delete_category_id" name="delete_category_id">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" name="action" value="save_settings">
+                            <span>&#10003;</span> Save Settings
+                        </button>
+                        <a href="/cms/dashboard" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/script.js"></script>
+    <script>
+        function setAction(val) {
+            document.getElementById('action').value = val;
+        }
+        
+        // Theme selection - immediate preview
+        document.addEventListener('DOMContentLoaded', function() {
+            // Theme radio buttons - preview on change
+            document.querySelectorAll('input[name="theme"]').forEach(function(radio) {
+                radio.addEventListener('change', function() {
+                    setTheme(this.value);
+                });
+            });
+            
+            // Category management handlers
+            // Edit category buttons
+            document.querySelectorAll('.edit-category-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var categoryId = this.getAttribute('data-category-id');
+                    var categoryName = this.getAttribute('data-category-name');
+                    var newName = prompt('Edit category name:', categoryName);
+                    if (newName !== null && newName.trim() !== '') {
+                        document.getElementById('edit_category_id').value = categoryId;
+                        document.getElementById('edit_category_name').value = newName.trim();
+                        setAction('edit_category');
+                        document.querySelector('form').submit();
+                    }
+                });
+            });
+            
+            // Delete category buttons
+            document.querySelectorAll('.delete-category-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var categoryId = this.getAttribute('data-category-id');
+                    document.getElementById('delete_category_id').value = categoryId;
+                    setAction('delete_category');
+                    document.querySelector('form').submit();
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+# Scooper CMS Reverse Proxy Configuration
+# Run with: caddy run
+# Or install as service: caddy start
+
+:80 {
+    # Redirect HTTP to HTTPS
+    redir https://{host}{uri} permanent
+}
+
+:443 {
+    # Your domain - replace with your actual domain
+    # For local development, use: localhost
+    # For production: yourdomain.com
+    host localhost
+
+    # Automatic HTTPS via Let's Encrypt
+    # For localhost, Caddy will use a self-signed cert
+    # For production domains, it auto-provisions from Let's Encrypt
+
+    # Reverse proxy to Scooper CMS Python server
+    reverse_proxy localhost:8000
+
+    # Optional: Add headers for security
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+}
