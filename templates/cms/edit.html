@@ -102,6 +102,10 @@
                         <input type="file" id="featured_image" name="featured_image" accept="image/*">
                         {% if story.featured_image %}
                         <p class="hint">Current: <a href="{{ story.featured_image }}" target="_blank">{{ story.featured_image }}</a></p>
+                        <label class="remove-image-label">
+                            <input type="checkbox" name="remove_featured_image" value="1">
+                            <span>Remove current image</span>
+                        </label>
                         {% endif %}
                         <p class="hint">Upload a new image to replace, or leave blank to keep current. Supported: JPG, PNG, GIF, WebP, SVG.</p>
                     </div>

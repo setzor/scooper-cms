@@ -495,6 +495,15 @@ img {
     height: auto;
 }
 
+/* Hide broken images with empty src */
+img[src=""] {
+    display: none;
+}
+
+.story-image img {
+    display: block;
+}
+
 
 /* ==========================================================================
    PAPER LAYOUT (Frontend)
@@ -637,6 +646,34 @@ img {
     box-shadow: var(--shadow-md);
     transform: translateY(-2px);
     border-color: var(--paper-link-color);
+}
+
+/* Featured image in story card */
+.story-image {
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.story-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+}
+
+/* Featured image in single story */
+.featured-image-container {
+    margin: 1.5rem 0;
+    text-align: center;
+}
+
+.featured-image {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
 }
 
 .story-meta {
@@ -1409,6 +1446,17 @@ img {
     font-size: 0.8rem;
     color: var(--cms-text-secondary);
     margin-top: 0.25rem;
+}
+
+.remove-image-label {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.remove-image-label input {
+    margin-right: 0.5rem;
 }
 
 .form-row {
