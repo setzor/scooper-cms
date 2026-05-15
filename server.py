@@ -20,6 +20,7 @@ import json
 import base64
 import cgi
 import uuid
+import secrets
 from io import BytesIO
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs, unquote
@@ -77,10 +78,29 @@ UPLOADS_DIR = os.path.join(STATIC_DIR, "uploads")
 CMS_USERNAME = "admin"
 CMS_PASSWORD = "admin"
 
+# CSRF configuration
+CSRF_COOKIE_NAME = "csrf_token"
+CSRF_TOKEN_LENGTH = 32
+
 # Ensure directories exist
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 os.makedirs(STATIC_DIR, exist_ok=True)
 os.makedirs(UPLOADS_DIR, exist_ok=True)
+
+# ============================================================================
+# CSRF PROTECTION
+# ============================================================================
+
+def generate_csrf_token():
+    """Generate a cryptographically secure random CSRF token."""
+    return secrets.token_hex(CSRF_TOKEN_LENGTH)
+
+
+def validate_csrf_token(request_cookie_token, request_form_token):
+    """Validate CSRF token using double-submit cookie pattern."""
+    if not request_cookie_token or not request_form_token:
+        return False
+    return secrets.compare_digest(request_cookie_token, request_form_token)
 
 
 # ============================================================================
@@ -481,6 +501,28 @@ class ScooperHandler(BaseHTTPRequestHandler):
         username, password = parts
         return username == CMS_USERNAME and password == CMS_PASSWORD
     
+    def get_csrf_cookie(self):
+        """Get the CSRF token from the Cookie header."""
+        cookie_header = self.headers.get('Cookie', '')
+        for part in cookie_header.split(';'):
+            part = part.strip()
+            if part.startswith(CSRF_COOKIE_NAME + '='):
+                return part.split('=', 1)[1]
+        return None
+    
+    def set_csrf_cookie(self, token):
+        """Set the CSRF token as a cookie in the response."""
+        cookie_value = f"{CSRF_COOKIE_NAME}={token}; Path=/; SameSite=Lax; Max-Age=3600"
+        self.send_header('Set-Cookie', cookie_value)
+    
+    def validate_cms_csrf(self, path, form_data):
+        """Validate CSRF token for CMS POST requests."""
+        if not path.startswith('/cms'):
+            return True
+        cookie_token = self.get_csrf_cookie()
+        form_token = form_data.get('csrf_token', '')
+        return validate_csrf_token(cookie_token, form_token)
+    
     def handle_request(self, method):
         """Handle HTTP request with routing."""
         parsed = urlparse(self.path)
@@ -490,8 +532,11 @@ class ScooperHandler(BaseHTTPRequestHandler):
         if path.endswith('/') and path != '/':
             path = path.rstrip('/')
         
+        # Track if this is a CMS request for CSRF handling
+        is_cms_request = path.startswith('/cms')
+        
         # Check if request targets CMS - requires authentication
-        if path.startswith('/cms'):
+        if is_cms_request:
             if not self.authenticate():
                 self.send_response(401)
                 self.send_header('WWW-Authenticate', 'Basic realm="Scooper CMS"')
@@ -571,9 +616,30 @@ class ScooperHandler(BaseHTTPRequestHandler):
             # Store files on handler instance for access in handlers
             self.files = files
             
-            # Call handler
+            # CSRF Validation for POST requests to CMS
+            if method == 'POST' and is_cms_request:
+                if not self.validate_cms_csrf(path, form_data):
+                    self.send_response(403)
+                    self.send_header('Content-Type', 'text/html; charset=utf-8')
+                    self.end_headers()
+                    self.wfile.write(b'CSRF validation failed')
+                    return
+            
+            # Generate CSRF token for GET requests to CMS forms
+            csrf_token = None
+            if method == 'GET' and is_cms_request:
+                existing_token = self.get_csrf_cookie()
+                if existing_token:
+                    csrf_token = existing_token
+                else:
+                    csrf_token = generate_csrf_token()
+            
+            # Call handler - pass csrf_token only to CMS handlers
             try:
-                response = handler(path, simple_params, form_data, self)
+                if is_cms_request:
+                    response = handler(path, simple_params, form_data, self, csrf_token=csrf_token)
+                else:
+                    response = handler(path, simple_params, form_data, self)
                 if isinstance(response, tuple):
                     content = response[0]
                     status_code = response[1] if len(response) > 1 else 200
@@ -589,6 +655,11 @@ class ScooperHandler(BaseHTTPRequestHandler):
                 if 'Content-Type' not in custom_headers:
                     content_type = 'application/json' if isinstance(content, (dict, list)) else 'text/html; charset=utf-8'
                     self.send_header('Content-Type', content_type)
+                
+                # Set CSRF cookie for CMS GET requests
+                if csrf_token and method == 'GET' and is_cms_request:
+                    self.set_csrf_cookie(csrf_token)
+                
                 self.end_headers()
                 
                 if isinstance(content, (dict, list)):
@@ -736,7 +807,7 @@ def paper_story_handler(path, params, form_data, handler):
     return render_template('paper/story.html', context)
 
 
-def cms_dashboard_handler(path, params, form_data, handler):
+def cms_dashboard_handler(path, params, form_data, handler, csrf_token=None):
     """Handle CMS dashboard."""
     theme = get_setting('theme', 'light')
     # Get first page for dashboard (shows recent stories)
@@ -761,12 +832,13 @@ def cms_dashboard_handler(path, params, form_data, handler):
         'total_stories': total_count,
         'published_count': published_count,
         'recent_stories': formatted_stories,
+        'csrf_token': csrf_token or '',
     }
     
     return render_template('cms/dashboard.html', context)
 
 
-def cms_stories_handler(path, params, form_data, handler):
+def cms_stories_handler(path, params, form_data, handler, csrf_token=None):
     """Handle CMS stories list with filtering support."""
     theme = get_setting('theme', 'light')
     
@@ -938,6 +1010,7 @@ def cms_stories_handler(path, params, form_data, handler):
         'has_filters': bool(search_query or category_filter or status_filter or month_filter),
         'active_filter_tags': active_filter_tags,
         'total_count': total_count,
+        'csrf_token': csrf_token or '',
         'pagination': {
             'current_page': page,
             'per_page': per_page,
@@ -951,7 +1024,7 @@ def cms_stories_handler(path, params, form_data, handler):
     return render_template('cms/stories.html', context)
 
 
-def cms_create_handler(path, params, form_data, handler):
+def cms_create_handler(path, params, form_data, handler, csrf_token=None):
     """Handle story creation form."""
     theme = get_setting('theme', 'light')
     
@@ -1007,12 +1080,13 @@ def cms_create_handler(path, params, form_data, handler):
         'theme': theme,
         'theme_icon': theme_icon,
         'categories': categories,
+        'csrf_token': csrf_token or '',
     }
     
     return render_template('cms/create.html', context)
 
 
-def cms_edit_handler(path, params, form_data, handler):
+def cms_edit_handler(path, params, form_data, handler, csrf_token=None):
     """Handle story editing form."""
     theme = get_setting('theme', 'light')
     
@@ -1078,12 +1152,13 @@ def cms_edit_handler(path, params, form_data, handler):
             'published': story.get('published', False),
         },
         'categories': categories,
+        'csrf_token': csrf_token or '',
     }
     
     return render_template('cms/edit.html', context)
 
 
-def cms_delete_handler(path, params, form_data, handler):
+def cms_delete_handler(path, params, form_data, handler, csrf_token=None):
     """Handle story deletion."""
     parts = [p for p in path.split('/') if p]
     story_id = parts[-1] if parts else ''
@@ -1092,7 +1167,7 @@ def cms_delete_handler(path, params, form_data, handler):
     return '', 302, {'Location': '/cms/stories'}
 
 
-def cms_preview_handler(path, params, form_data, handler):
+def cms_preview_handler(path, params, form_data, handler, csrf_token=None):
     """Handle story preview."""
     parts = [p for p in path.split('/') if p]
     story_id = parts[-1] if parts else ''
@@ -1127,7 +1202,7 @@ def cms_preview_handler(path, params, form_data, handler):
     return render_template('paper/story.html', context)
 
 
-def cms_settings_handler(path, params, form_data, handler):
+def cms_settings_handler(path, params, form_data, handler, csrf_token=None):
     """Handle CMS settings."""
     theme = get_setting('theme', 'light')
     
@@ -1187,12 +1262,13 @@ def cms_settings_handler(path, params, form_data, handler):
         'site_title_value': get_setting('site_title', 'Scooper Paper'),
         'site_description_value': get_setting('site_description', 'Your News, Delivered'),
         'categories': categories,
+        'csrf_token': csrf_token or '',
     }
     
     return render_template('cms/settings.html', context)
 
 
-def toggle_theme_handler(path, params, form_data, handler):
+def toggle_theme_handler(path, params, form_data, handler, csrf_token=None):
     """Handle theme toggle via AJAX."""
     current = get_setting('theme', 'light')
     new_theme = 'dark' if current == 'light' else 'light'

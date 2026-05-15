@@ -60,6 +60,7 @@
 
             <div class="cms-content">
                 <form action="/cms/settings" method="post" class="settings-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <div class="settings-section">
                         <h2>Site Settings</h2>
                         
