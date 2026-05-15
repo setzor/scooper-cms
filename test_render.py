@@ -7,7 +7,7 @@ Run this to see the templates with actual data filled in.
 import sys
 sys.path.insert(0, '.')
 
-from server import render_template, init_db, create_story, get_all_stories, get_setting, set_setting
+from server import render_template, init_db, create_story, get_all_stories, get_setting, set_setting, SafeString
 from datetime import datetime
 
 # Initialize
@@ -47,12 +47,12 @@ context = {
     'site_title': get_setting('site_title'),
     'site_description': get_setting('site_description'),
     'theme': get_setting('theme'),
-    'theme_icon': '&#127774;',
+    'theme_icon': SafeString('&#127774;'),
     'stories': [{
         'id': 1,
         'title': 'Breaking News: Scooper Launches!',
         'slug': 'breaking-news-scooper-launches',
-        'excerpt': 'Scooper CMS has officially launched...',
+        'excerpt': SafeString('Scooper CMS has officially launched...'),
         'author': 'Scooper Team',
         'category': 'Announcement',
         'published_at': datetime.now().strftime('%B %d, %Y')
@@ -100,7 +100,7 @@ print("=" * 70)
 
 context_dark = context.copy()
 context_dark['theme'] = 'dark'
-context_dark['theme_icon'] = '&#127771;'
+context_dark['theme_icon'] = SafeString('&#127771;')
 
 html_dark = render_template('paper/index.html', context_dark)
 

@@ -26,6 +26,8 @@ from urllib.parse import urlparse, parse_qs, unquote
 from datetime import datetime
 import re
 
+from template_engine import TemplateEngine, SafeString, get_engine as get_template_engine
+
 # HELPERS
 # ============================================================================
 
@@ -88,7 +90,8 @@ os.makedirs(UPLOADS_DIR, exist_ok=True)
 def get_theme_icon(theme):
     """Get the appropriate icon for a theme (sun for light, moon for dark)."""
     light_themes = ['light', 'rose-pine-dawn', 'catpuccin-latte']
-    return '&#127774;' if theme in light_themes else '&#127771;'
+    icon = '&#127774;' if theme in light_themes else '&#127771;'
+    return SafeString(icon)
 
 
 # ============================================================================
@@ -403,131 +406,28 @@ def delete_category(category_id):
 # ============================================================================
 
 def render_template(name, context=None):
-    """Render a template with variable substitution.
+    """Render a template with variable substitution using the lexer/parser engine.
     
-    Supports:
-    - {{ variable }} - variable substitution (with nested access via dot notation)
-    - {# comment #} - comments (removed)
-    - {% include template %} - include another template
-    - {% for item in list %}...{% endfor %} - loops
-    - {% if condition %}...{% endif %} - conditionals
+    This function uses a proper lexer/parser-based template engine that:
+    - Auto-escapes HTML special characters to prevent XSS vulnerabilities
+    - Properly parses template syntax (variables, comments, includes, loops, conditionals)
+    - Supports nested variable access via dot notation
+    
+    To mark content as safe HTML (e.g., rich text from the database), wrap it in SafeString:
+        context = {'content': SafeString(html_content)}
+    
+    Args:
+        name: Template file name (relative to TEMPLATES_DIR)
+        context: Dictionary of variables for the template
+    
+    Returns:
+        Rendered HTML string
     """
     if context is None:
         context = {}
     
-    template_path = os.path.join(TEMPLATES_DIR, name)
-    
-    if not os.path.exists(template_path):
-        return f"Template not found: {name}"
-    
-    with open(template_path, 'r', encoding='utf-8') as f:
-        template = f.read()
-    
-    # Helper to get nested value
-    def get_nested(obj, path):
-        parts = path.split('.')
-        current = obj
-        for part in parts:
-            if isinstance(current, dict) and part in current:
-                current = current[part]
-            else:
-                return ''
-        return current if current is not None else ''
-    
-    # Process includes
-    def replace_include(match):
-        include_name = match.group(1).strip()
-        return render_template(include_name, context)
-    template = re.sub(r'\{%\s*include\s+([^%]+)%\}', replace_include, template)
-    
-    # Process conditionals - {% if expression %}...{% endif %}
-    # Support: {% if variable %}, {% if not variable %}, {% if variable == value %}
-    def replace_conditional(match):
-        condition = match.group(1).strip()
-        content = match.group(2)
-        
-        # Parse condition
-        if condition == 'not' or condition.startswith('not '):
-            # {% if not variable %}
-            var_name = condition.replace('not ', '').strip()
-            value = get_nested(context, var_name)
-            if not value:
-                return process_template(content, context)
-            return ''
-        
-        elif '==' in condition:
-            # {% if variable == value %}
-            parts = condition.split('==')
-            var_name = parts[0].strip()
-            expected = parts[1].strip().strip("'\"")
-            value = get_nested(context, var_name)
-            if str(value) == expected:
-                return process_template(content, context)
-            return ''
-        
-        else:
-            # {% if variable %}
-            value = get_nested(context, condition)
-            if value:
-                return process_template(content, context)
-            return ''
-    
-    # Process loops - {% for item in list %}...{% endfor %}
-    def replace_for_loop(match):
-        var_decl = match.group(1).strip()
-        loop_content = match.group(2)
-        
-        parts = var_decl.split(' in ')
-        if len(parts) != 2:
-            return ''
-        
-        item_var = parts[0].strip()
-        list_var = parts[1].strip()
-        
-        items = get_nested(context, list_var)
-        if not items or not isinstance(items, (list, tuple)):
-            return ''
-        
-        result = []
-        for idx, item in enumerate(items):
-            # Create loop context
-            loop_ctx = context.copy()
-            loop_ctx[item_var] = item
-            loop_ctx['loop'] = {
-                'index': idx + 1,
-                'index0': idx,
-                'first': idx == 0,
-                'last': idx == len(items) - 1,
-            }
-            result.append(process_template(loop_content, loop_ctx))
-        
-        return ''.join(result)
-    
-    # Process template recursively
-    def process_template(tpl, ctx):
-        # Remove comments
-        tpl = re.sub(r'\{#.*?#\}', '', tpl, flags=re.DOTALL)
-        
-        # Process nested includes
-        tpl = re.sub(r'\{%\s*include\s+([^%]+)%\}', replace_include, tpl)
-        
-        # Process nested conditionals
-        tpl = re.sub(r'\{%\s*if\s+([^%]+)%\}(.*?)\{%\s*endif\s*%\}', replace_conditional, tpl, flags=re.DOTALL)
-        
-        # Process nested loops
-        tpl = re.sub(r'\{%\s*for\s+([^%]+)%\}(.*?)\{%\s*endfor\s*%\}', replace_for_loop, tpl, flags=re.DOTALL)
-        
-        # Replace variables
-        def replace_var(match):
-            var_name = match.group(1).strip()
-            return str(get_nested(ctx, var_name))
-        
-        tpl = re.sub(r'\{\s*\{\s*([^\}\s]+)\s*\}\s*\}', replace_var, tpl)
-        tpl = re.sub(r'\{\{([^\}\s]+)\}\}', replace_var, tpl)
-        
-        return tpl
-    
-    return process_template(template, context)
+    engine = get_template_engine(TEMPLATES_DIR)
+    return engine.render_template(name, context)
 
 
 # ============================================================================
@@ -767,11 +667,12 @@ def paper_home_handler(path, params, form_data, handler):
     # Format stories
     formatted_stories = []
     for story in stories:
+        excerpt = story.get('excerpt', story['content'][:150] + '...')
         formatted_stories.append({
             'id': story['id'],
             'title': story['title'],
             'slug': story['slug'],
-            'excerpt': story.get('excerpt', story['content'][:150] + '...'),
+            'excerpt': SafeString(excerpt),
             'author': story.get('author', 'Admin'),
             'category': story.get('category', 'General'),
             'published_at': format_date(story.get('published_at')) or format_date(story.get('created_at')),
@@ -824,8 +725,8 @@ def paper_story_handler(path, params, form_data, handler):
             'id': story['id'],
             'title': story['title'],
             'slug': story['slug'],
-            'content': story['content'],
-            'excerpt': story.get('excerpt', ''),
+            'content': SafeString(story['content']),
+            'excerpt': SafeString(story.get('excerpt', '')),
             'author': story.get('author', 'Admin'),
             'category': story.get('category', 'General'),
             'published_at': format_date(story.get('published_at')) or format_date(story.get('created_at')),
@@ -1169,8 +1070,8 @@ def cms_edit_handler(path, params, form_data, handler):
             'id': story['id'],
             'title': story['title'],
             'slug': story['slug'],
-            'content': story['content'],
-            'excerpt': story.get('excerpt', ''),
+            'content': SafeString(story['content']),
+            'excerpt': SafeString(story.get('excerpt', '')),
             'author': story.get('author', 'Admin'),
             'category': story.get('category', 'General'),
             'featured_image': story.get('featured_image', ''),
@@ -1215,8 +1116,8 @@ def cms_preview_handler(path, params, form_data, handler):
             'id': story['id'],
             'title': story['title'],
             'slug': story['slug'],
-            'content': story['content'],
-            'excerpt': story.get('excerpt', ''),
+            'content': SafeString(story['content']),
+            'excerpt': SafeString(story.get('excerpt', '')),
             'author': story.get('author', 'Admin'),
             'category': story.get('category', 'General'),
             'published_at': format_date(story.get('published_at')) or format_date(story.get('created_at')),
