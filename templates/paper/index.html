@@ -1,96 +1,111 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-theme="{{ theme }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- This template is rendered by server.py - all {{ variables }} are replaced with actual values -->
-    <title>{{ site_title }}</title>
-    <meta name="description" content="{{ site_description }}">
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lora:wght@400;600&family=Source+Serif+Pro:wght@400;600&display=swap" rel="stylesheet">
-</head>
-<body class="theme-{{ theme }}">
-    <div class="paper-layout">
-        <!-- Header -->
-        <header class="paper-header">
-            <div class="header-container">
-                <div class="logo">
-                    <a href="/">{{ site_title }}</a>
-                </div>
-                <p class="tagline">{{ site_description }}</p>
-            </div>
-            <nav class="paper-nav">
-                <button class="theme-toggle paper-theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">
-                    <span id="theme-icon">{{ theme_icon }}</span>
-                </button>
-                <a href="/cms" class="cms-link">
-                    <span>&#9881;</span> CMS
-                </a>
-            </nav>
-        </header>
-
-        <!-- Main Content -->
-        <main class="paper-main">
-            <div class="container">
-                <section class="featured-stories">
-                    <h2 class="section-title">Featured Stories</h2>
-                    <div class="stories-grid">
-                        {% for story in stories %}
-                        <article class="story-card">
-                            <div class="story-meta">
-                                <span class="category-tag">{{ story.category }}</span>
-                                <span class="date">{{ story.published_at }}</span>
-                            </div>
-                            <h3 class="story-title">
-                                <a href="/story/{{ story.slug }}">{{ story.title }}</a>
-                            </h3>
-                            <p class="story-excerpt">{{ story.excerpt }}</p>
-                            <div class="story-author">
-                                <span>By {{ story.author }}</span>
-                            </div>
-                            <a href="/story/{{ story.slug }}" class="read-more">Read More &raquo;</a>
-                        </article>
-                        {% endfor %}
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!-- This template is rendered by server.py - all {{ variables }} are replaced with actual values -->
+        <title>{{ site_title }}</title>
+        <meta name="description" content="{{ site_description }}" />
+        <link rel="stylesheet" href="/static/css/style.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lora:wght@400;600&family=Source+Serif+Pro:wght@400;600&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body class="theme-{{ theme }}">
+        <div class="paper-layout">
+            <!-- Header -->
+            <header class="paper-header">
+                <div class="header-container">
+                    <div class="logo">
+                        <a href="/">{{ site_title }}</a>
                     </div>
-                </section>
-                
-                {% if pagination.total_pages > 1 %}
-                <nav class="pagination" role="navigation">
-                    {% if pagination.has_previous %}
-                    <a href="/?page={{ pagination.current_page - 1 }}{% if pagination.current_page > 2 %}&{% endif %}" class="page-link prev" aria-label="Previous page">&laquo; Previous</a>
-                    {% endif %}
-                    
-                    {% for p in range(1, pagination.total_pages + 1) %}
-                        {% if p == pagination.current_page %}
-                        <span class="page-link current">{{ p }}</span>
-                        {% elif p <= 3 or p > pagination.total_pages - 3 or (p >= pagination.current_page - 1 and p <= pagination.current_page + 1) %}
-                        <a href="/?page={{ p }}" class="page-link">{{ p }}</a>
-                        {% elif p == 4 or p == pagination.total_pages - 3 %}
-                        <span class="page-link ellipsis">...</span>
-                        {% endif %}
-                    {% endfor %}
-                    
-                    {% if pagination.has_next %}
-                    <a href="/?page={{ pagination.current_page + 1 }}" class="page-link next" aria-label="Next page">Next &raquo;</a>
-                    {% endif %}
-                </nav>
-                {% endif %}
-            </div>
-        </main>
-
-        <!-- Footer -->
-        <footer class="paper-footer">
-            <div class="footer-container">
-                <p>&copy; 2024 {{ site_title }}. All rights reserved.</p>
-                <div class="footer-links">
-                    <a href="/cms" class="footer-cms-link">CMS Admin</a>
+                    <p class="tagline">{{ site_description }}</p>
                 </div>
-            </div>
-        </footer>
-    </div>
+                <nav class="paper-nav">
+                    <button class="theme-toggle paper-theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode"><span id="theme-icon">{{ theme_icon }}</span></button>
+                    <a href="/cms" class="cms-link">
+                        <span>&#9881;</span> CMS
+                    </a>
+                </nav>
+            </header>
 
-    <script src="/static/js/script.js"></script>
-</body>
+            <!-- Main Content -->
+            <main class="paper-main">
+                <div class="container">
+                    <section class="featured-stories">
+                        <h2 class="section-title">Featured Stories</h2>
+                        <div class="stories-grid">
+                            {% for story in stories %}
+                            <article class="story-card">
+                                {% if story.featured_image %}
+                                <div class="story-image">
+                                    <img
+                                        src="{{ story.featured_image }}"
+                                        alt="{{ story.title }}"
+                                    />
+                                </div>
+                                {% endif %}
+                                <div class="story-meta">
+                                    <span class="category-tag">{{ story.category }}</span>
+                                    <span class="date">{{ story.published_at }}</span>
+                                </div>
+                                <h3 class="story-title">
+                                    <a href="/story/{{ story.slug }}">{{ story.title }}</a>
+                                </h3>
+                                <p class="story-excerpt">{{ story.excerpt }}</p>
+                                <div class="story-author">
+                                    <span>By {{ story.author }}</span>
+                                </div>
+                                <a href="/story/{{ story.slug }}" class="read-more">Read More &raquo;</a>
+                            </article>
+                            {% endfor %}
+                        </div>
+                    </section>
+
+                    {% if pagination.total_pages > 1 %}
+                    <nav class="pagination" role="navigation">
+                        {% if pagination.has_previous %}
+                        <a href="/?page={{ pagination.current_page - 1 }}" class="page-link prev" aria-label="Previous page">&laquo; Previous</a>
+                        {% endif %}
+                        {% for p in range(1, pagination.total_pages + 1) %}
+                            {% if p == pagination.current_page %}
+                            <span class="page-link current">{{ p }}</span>
+                            {% elif p <= 3 or p > pagination.total_pages - 3 or (p >= pagination.current_page - 1 and p <= pagination.current_page + 1) %}
+                            <a href="/?page={{ p }}" class="page-link">{{ p }}</a>
+                            {% elif p == 4 or p == pagination.total_pages - 3 %}
+                            <span class="page-link ellipsis">...</span>
+                            {% endif %}
+                        {% endfor %}
+                        {% if pagination.has_next %}
+                        <a href="/?page={{ pagination.current_page + 1 }}" class="page-link next" aria-label="Next page">Next &raquo;</a>
+                        {% endif %}
+                    </nav>
+                    {% endif %}
+                </div>
+            </main>
+
+            <!-- Footer -->
+            <footer class="paper-footer">
+                <div class="footer-container">
+                    <p>&copy; 2024 {{ site_title }}. All rights reserved.</p>
+                    <div class="footer-links">
+                        <a href="/cms" class="footer-cms-link">CMS Admin</a>
+                    </div>
+                </div>
+            </footer>
+        </div>
+
+        <script src="/static/js/script.js"></script>
+        <script>
+        // Hide empty images on index page
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.story-image img[src=""]').forEach(function(img) {
+                img.closest('.story-image').style.display = 'none';
+            });
+        });
+        </script>
+    </body>
 </html>

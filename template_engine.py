@@ -862,6 +862,7 @@ class Parser:
             # Check for dotted access
             name_parts = [token.value]
             while self.current_token.type == TokenType.DOT:
+                name_parts.append('.')
                 self.advance()
                 if self.current_token.type == TokenType.IDENTIFIER:
                     name_parts.append(self.current_token.value)

@@ -40,7 +40,7 @@ def save_uploaded_file(field, upload_dir=None):
     """Save an uploaded file to the uploads directory and return the relative path."""
     if upload_dir is None:
         upload_dir = UPLOADS_DIR
-    if not field or not field.filename:
+    if field is None or not hasattr(field, 'filename') or not field.filename:
         return None
     
     # Generate a unique filename to prevent conflicts
@@ -54,6 +54,9 @@ def save_uploaded_file(field, upload_dir=None):
     file_path = os.path.join(upload_dir, unique_name)
     
     try:
+        # Seek to beginning in case file pointer was moved
+        if hasattr(field.file, 'seek'):
+            field.file.seek(0)
         file_content = field.file.read()
         with open(file_path, 'wb') as f:
             f.write(file_content)
@@ -747,6 +750,7 @@ def paper_home_handler(path, params, form_data, handler):
             'excerpt': SafeString(excerpt),
             'author': story.get('author', 'Admin'),
             'category': story.get('category', 'General'),
+            'featured_image': story.get('featured_image', ''),
             'published_at': format_date(story.get('published_at')) or format_date(story.get('created_at')),
         })
     
@@ -799,6 +803,7 @@ def paper_story_handler(path, params, form_data, handler):
             'slug': story['slug'],
             'content': SafeString(story['content']),
             'excerpt': SafeString(story.get('excerpt', '')),
+            'featured_image': story.get('featured_image', ''),
             'author': story.get('author', 'Admin'),
             'category': story.get('category', 'General'),
             'published_at': format_date(story.get('published_at')) or format_date(story.get('created_at')),
@@ -1103,7 +1108,11 @@ def cms_edit_handler(path, params, form_data, handler, csrf_token=None):
         # Process form submission
         # Handle file upload for featured_image
         featured_image_path = form_data.get('featured_image', story.get('featured_image', ''))
-        if 'featured_image' in handler.files:
+        
+        # Check if user wants to remove the featured image
+        if form_data.get('remove_featured_image') == '1':
+            featured_image_path = ''
+        elif 'featured_image' in handler.files:
             file_field = handler.files['featured_image']
             if file_field.filename:
                 saved_path = save_uploaded_file(file_field)
