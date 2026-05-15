@@ -343,10 +343,11 @@ def escape_html(text):
 def get_all_categories():
     """Get all categories."""
     conn = get_db()
-    cursor = conn.execute("SELECT * FROM categories ORDER BY name")
-    categories = [dict(row) for row in cursor.fetchall()]
+    cursor = conn.execute("SELECT id, name FROM categories ORDER BY name")
+    rows = cursor.fetchall()
     conn.close()
-    return categories
+    # Ensure we return a list of proper dicts
+    return [{'id': row['id'], 'name': row['name']} for row in rows]
 
 
 def get_category_by_id(category_id):
@@ -356,19 +357,19 @@ def get_category_by_id(category_id):
     except:
         return None
     conn = get_db()
-    cursor = conn.execute("SELECT * FROM categories WHERE id = ?", (category_id,))
+    cursor = conn.execute("SELECT id, name FROM categories WHERE id = ?", (category_id,))
     category = cursor.fetchone()
     conn.close()
-    return dict(category) if category else None
+    return {'id': category['id'], 'name': category['name']} if category else None
 
 
 def get_category_by_name(name):
     """Get a category by name."""
     conn = get_db()
-    cursor = conn.execute("SELECT * FROM categories WHERE name = ?", (name,))
+    cursor = conn.execute("SELECT id, name FROM categories WHERE name = ?", (name,))
     category = cursor.fetchone()
     conn.close()
-    return dict(category) if category else None
+    return {'id': category['id'], 'name': category['name']} if category else None
 
 
 def create_category(name):
@@ -1163,21 +1164,27 @@ def cms_settings_handler(path, params, form_data, handler):
     
     # Get categories from DB and merge with defaults
     db_categories = get_all_categories()
+    
+    # Start with default categories
     default_categories = ['General', 'Local News', 'Technology', 'Business', 'Sports', 'Entertainment', 'Announcement']
+    categories = [{'id': None, 'name': name} for name in default_categories]
     
-    # Create list of unique category names (defaults + custom)
-    all_category_names = list(set(default_categories + [c['name'] for c in db_categories]))
-    all_category_names.sort()
+    # Add or merge DB categories
+    for db_cat in db_categories:
+        # Check if this category already exists in defaults
+        found = False
+        for i, cat in enumerate(categories):
+            if cat['name'] == db_cat['name']:
+                # Replace default with DB category (which has an ID)
+                categories[i] = db_cat
+                found = True
+                break
+        if not found:
+            # Add new category from DB
+            categories.append(db_cat)
     
-    # Build categories list with DB IDs where available
-    categories = []
-    for cat_name in all_category_names:
-        # Try to find matching DB category
-        matching = [c for c in db_categories if c['name'] == cat_name]
-        if matching:
-            categories.append(matching[0])
-        else:
-            categories.append({'id': None, 'name': cat_name})
+    # Sort categories by name
+    categories.sort(key=lambda c: c['name'])
     
     context = {
         'site_title': get_setting('site_title', 'Scooper'),
@@ -1195,7 +1202,8 @@ def cms_settings_handler(path, params, form_data, handler):
 def toggle_theme_handler(path, params, form_data, handler):
     """Handle theme toggle via AJAX."""
     current = get_setting('theme', 'light')
-    new_theme = 'dark' if current == 'light' else 'light'
+    # Use the requested theme, fallback to a simple toggle if none provided
+    new_theme = form_data.get('theme', 'dark' if current == 'light' else 'light')
     set_setting('theme', new_theme)
     return {'theme': new_theme, 'success': True}
 

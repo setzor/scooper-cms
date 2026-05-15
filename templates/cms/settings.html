@@ -70,44 +70,33 @@
 
                         <div class="form-group">
                             <label for="site_description">Site Description</label>
-                            <input type="text" id="site_description" name="site_description" value="{{ site_description }}" placeholder="Short tagline for your site">
+                            <input type="text" id="site_description" name="site_description" value="{{ site_description_value }}" placeholder="Short tagline for your site">
                         </div>
 
                         <div class="form-group">
                             <label>Theme</label>
-                            <div class="theme-options">
-                                <label class="theme-option">
-                                    <input type="radio" name="theme" value="light" {% if theme == 'light' %}checked{% endif %}>
-                                    <span>Light</span>
-                                </label>
-                                <label class="theme-option">
-                                    <input type="radio" name="theme" value="dark" {% if theme == 'dark' %}checked{% endif %}>
-                                    <span>Dark</span>
-                                </label>
-                                <label class="theme-option">
-                                    <input type="radio" name="theme" value="rose-pine-dawn" {% if theme == 'rose-pine-dawn' %}checked{% endif %}>
-                                    <span>Rose Pine Dawn</span>
-                                </label>
-                                <label class="theme-option">
-                                    <input type="radio" name="theme" value="rose-pine" {% if theme == 'rose-pine' %}checked{% endif %}>
-                                    <span>Rose Pine</span>
-                                </label>
-                                <label class="theme-option">
-                                    <input type="radio" name="theme" value="catpuccin-latte" {% if theme == 'catpuccin-latte' %}checked{% endif %}>
-                                    <span>Catpuccin Latte</span>
-                                </label>
-                                <label class="theme-option">
-                                    <input type="radio" name="theme" value="catpuccin-frappe" {% if theme == 'catpuccin-frappe' %}checked{% endif %}>
-                                    <span>Catpuccin Frappe</span>
-                                </label>
-                                <label class="theme-option">
-                                    <input type="radio" name="theme" value="catpuccin-macchiato" {% if theme == 'catpuccin-macchiato' %}checked{% endif %}>
-                                    <span>Catpuccin Macchiato</span>
-                                </label>
-                                <label class="theme-option">
-                                    <input type="radio" name="theme" value="catpuccin-mocha" {% if theme == 'catpuccin-mocha' %}checked{% endif %}>
-                                    <span>Catpuccin Mocha</span>
-                                </label>
+                            <div class="theme-selector">
+                                <select id="theme-select" name="theme" class="theme-dropdown">
+                                    <option value="light" {% if theme == 'light' %}selected{% endif %}>Light</option>
+                                    <option value="dark" {% if theme == 'dark' %}selected{% endif %}>Dark</option>
+                                    <option value="rose-pine-dawn" {% if theme == 'rose-pine-dawn' %}selected{% endif %}>Rose Pine Dawn</option>
+                                    <option value="rose-pine" {% if theme == 'rose-pine' %}selected{% endif %}>Rose Pine</option>
+                                    <option value="catpuccin-latte" {% if theme == 'catpuccin-latte' %}selected{% endif %}>Catpuccin Latte</option>
+                                    <option value="catpuccin-frappe" {% if theme == 'catpuccin-frappe' %}selected{% endif %}>Catpuccin Frappe</option>
+                                    <option value="catpuccin-macchiato" {% if theme == 'catpuccin-macchiato' %}selected{% endif %}>Catpuccin Macchiato</option>
+                                    <option value="catpuccin-mocha" {% if theme == 'catpuccin-mocha' %}selected{% endif %}>Catpuccin Mocha</option>
+                                </select>
+                                <div id="theme-preview" class="theme-preview">
+                                    <div class="preview-container">
+                                        <div class="preview-header" id="preview-header"></div>
+                                        <div class="preview-body" id="preview-body"></div>
+                                        <div class="preview-footer" id="preview-footer"></div>
+                                    </div>
+                                    <div class="preview-accents">
+                                        <div class="preview-btn" id="preview-btn"></div>
+                                        <div class="preview-accent" id="preview-accent"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -120,13 +109,12 @@
                             <label for="new_category">Add New Category</label>
                             <div class="category-add">
                                 <input type="text" id="new_category" name="new_category" placeholder="Enter category name">
-                                <button type="button" class="btn btn-small btn-primary" onclick="setAction('add_category'); document.querySelector('form').submit();">
+                                <button type="button" class="btn btn-small btn-primary" onclick="setAction('add_category'); hasUnsavedChanges = false; document.querySelector('form').submit();">
                                     <span>&#10010;</span> Add
                                 </button>
                             </div>
                         </div>
                         
-                        {% if categories %}
                         <div class="form-group">
                             <label>Existing Categories</label>
                             <div class="category-list">
@@ -140,7 +128,7 @@
                                         </button>
                                         <button type="button" class="btn btn-tiny btn-danger delete-category-btn" 
                                                 data-category-id="{{ cat.id }}" 
-                                                onclick="return confirm('Are you sure you want to delete this category? Stories using this category will keep their category name as text.')">
+                                                data-category-name="{{ cat.name }}">
                                             <span>&#128465;</span> Delete
                                         </button>
                                     </div>
@@ -148,10 +136,6 @@
                                 {% endfor %}
                             </div>
                         </div>
-                        {% endif %}
-                        {% if not categories %}
-                        <p class="hint">No categories yet. Add your first category above.</p>
-                        {% endif %}
                         
                         <!-- Hidden fields for category edit/delete -->
                         <input type="hidden" id="edit_category_id" name="edit_category_id">
@@ -176,14 +160,55 @@
             document.getElementById('action').value = val;
         }
         
-        // Theme selection - immediate preview
+        // Theme selection - preview on dropdown change
         document.addEventListener('DOMContentLoaded', function() {
-            // Theme radio buttons - preview on change
-            document.querySelectorAll('input[name="theme"]').forEach(function(radio) {
-                radio.addEventListener('change', function() {
-                    setTheme(this.value);
+            const themeSelect = document.getElementById('theme-select');
+            const previewHeader = document.getElementById('preview-header');
+            const previewBody = document.getElementById('preview-body');
+            const previewFooter = document.getElementById('preview-footer');
+            const previewBtn = document.getElementById('preview-btn');
+            const previewAccent = document.getElementById('preview-accent');
+            
+            // Theme color definitions for preview - header, body, footer, button, accent
+            const themeColors = {
+                'light': { header: '#ffffff', body: '#f5f5f5', footer: '#2a2a2a', btn: '#0066cc', accent: '#0066cc' },
+                'dark': { header: '#2a2a2a', body: '#1a1a1a', footer: '#0a0a0a', btn: '#4d90fe', accent: '#4d90fe' },
+                'rose-pine-dawn': { header: '#fffaf3', body: '#f4ede8', footer: '#575279', btn: '#ea9d34', accent: '#ea9d34' },
+                'rose-pine': { header: '#1f1d2e', body: '#191724', footer: '#191724', btn: '#ebbcba', accent: '#f38ba8' },
+                'catpuccin-latte': { header: '#ffffff', body: '#e6e9ef', footer: '#4c4f69', btn: '#88c0d0', accent: '#88c0d0' },
+                'catpuccin-frappe': { header: '#303446', body: '#292c3c', footer: '#232634', btn: '#88c0d0', accent: '#f2cdcd' },
+                'catpuccin-macchiato': { header: '#24273a', body: '#1e1e2e', footer: '#181826', btn: '#88c0d0', accent: '#f5c2e7' },
+                'catpuccin-mocha': { header: '#1e1e2e', body: '#181826', footer: '#11111b', btn: '#88c0d0', accent: '#f5e0dc' }
+            };
+            
+            function updateThemePreview(theme) {
+                const colors = themeColors[theme] || themeColors['light'];
+                previewHeader.style.backgroundColor = colors.header;
+                previewBody.style.backgroundColor = colors.body;
+                previewFooter.style.backgroundColor = colors.footer;
+                previewBtn.style.backgroundColor = colors.btn;
+                previewAccent.style.backgroundColor = colors.accent;
+            }
+            
+            // Update preview on dropdown change
+            if (themeSelect) {
+                themeSelect.addEventListener('change', function() {
+                    updateThemePreview(this.value);
                 });
-            });
+                // Initialize preview with current theme
+                updateThemePreview(themeSelect.value);
+            }
+            
+            // Sync theme to localStorage on form submit (so page reload picks it up)
+            const settingsForm = document.querySelector('.settings-form');
+            if (settingsForm) {
+                settingsForm.addEventListener('submit', function() {
+                    const selectedTheme = themeSelect ? themeSelect.value : null;
+                    if (selectedTheme) {
+                        localStorage.setItem('scooper-theme', selectedTheme);
+                    }
+                });
+            }
             
             // Category management handlers
             // Edit category buttons
@@ -196,6 +221,7 @@
                         document.getElementById('edit_category_id').value = categoryId;
                         document.getElementById('edit_category_name').value = newName.trim();
                         setAction('edit_category');
+                        hasUnsavedChanges = false;
                         document.querySelector('form').submit();
                     }
                 });
@@ -205,9 +231,13 @@
             document.querySelectorAll('.delete-category-btn').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     var categoryId = this.getAttribute('data-category-id');
-                    document.getElementById('delete_category_id').value = categoryId;
-                    setAction('delete_category');
-                    document.querySelector('form').submit();
+                    var categoryName = this.getAttribute('data-category-name');
+                    if (confirm('Are you sure you want to delete "' + categoryName + '"? Stories using this category will keep their category name as text.')) {
+                        document.getElementById('delete_category_id').value = categoryId;
+                        setAction('delete_category');
+                        hasUnsavedChanges = false;
+                        document.querySelector('form').submit();
+                    }
                 });
             });
         });
