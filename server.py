@@ -18,7 +18,8 @@ import sys
 import sqlite3
 import json
 import base64
-import cgi
+import email
+from email.message import Message
 import uuid
 import secrets
 from io import BytesIO
@@ -31,6 +32,58 @@ from template_engine import TemplateEngine, SafeString, get_engine as get_templa
 
 # HELPERS
 # ============================================================================
+
+class MultipartField:
+    """Represents a field from a multipart form."""
+    def __init__(self, name, filename=None, value='', file=None):
+        self.name = name
+        self.filename = filename
+        self.value = value
+        self.file = file
+
+def parse_multipart_form(rfile, headers, content_length):
+    """Parse multipart form data using email module.
+    Returns list of MultipartField objects.
+    """
+    content_type = headers.get('Content-Type', '')
+    boundary = None
+    if 'multipart/form-data' in content_type:
+        boundary_match = re.search(r'boundary=([^\s;]+)', content_type)
+        if boundary_match:
+            boundary = boundary_match.group(1)
+    if not boundary:
+        return []
+    raw_data = rfile.read(content_length)
+    msg = email.message_from_bytes(raw_data)
+    fields = []
+    if msg.is_multipart():
+        for part in msg.walk():
+            content_disposition = part.get('Content-Disposition', '')
+            if not content_disposition:
+                continue
+            name = None
+            filename = None
+            disposition_parts = content_disposition.split(';')
+            for dp in disposition_parts:
+                dp = dp.strip()
+                if dp.startswith('name='):
+                    name = dp[5:].strip('"')
+                elif dp.startswith('filename='):
+                    filename = dp[9:].strip('"')
+            if name:
+                payload = part.get_payload(decode=True)
+                if filename:
+                    file_obj = BytesIO(payload) if payload else BytesIO(b'')
+                    fields.append(MultipartField(name, filename, '', file_obj))
+                else:
+                    if isinstance(payload, bytes):
+                        value = payload.decode('utf-8', errors='replace')
+                    else:
+                        value = str(payload)
+                    fields.append(MultipartField(name, None, value, None))
+    return fields
+
+
 
 # ============================================================================
 # HELPERS
@@ -593,12 +646,12 @@ class ScooperHandler(BaseHTTPRequestHandler):
                     if 'multipart/form-data' in content_type:
                         # Parse multipart form data
                         try:
-                            form = cgi.FieldStorage(
-                                fp=self.rfile,
-                                headers=self.headers,
-                                environ={'REQUEST_METHOD': method}
+                            multipart_fields = parse_multipart_form(
+                                self.rfile,
+                                self.headers,
+                                content_length
                             )
-                            for field in form.list:
+                            for field in multipart_fields:
                                 if field.filename:
                                     # File upload field
                                     files[field.name] = field
