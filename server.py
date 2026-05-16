@@ -46,7 +46,7 @@ def save_uploaded_file(field, upload_dir=None):
     # Generate a unique filename to prevent conflicts
     ext = os.path.splitext(field.filename)[1].lower()
     # Clean extension - only allow common image types
-    allowed_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'}
+    allowed_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
     if ext not in allowed_extensions:
         return None
     
