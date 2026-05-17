@@ -164,8 +164,7 @@
                                 <td>
                                     {% if story.published %}
                                     <span class="status-badge published">Published</span>
-                                    {% endif %}
-                                    {% if not story.published %}
+                                    {% else %}
                                     <span class="status-badge draft">Draft</span>
                                     {% endif %}
                                 </td>
