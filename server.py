@@ -131,8 +131,8 @@ TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templa
 UPLOADS_DIR = os.path.join(STATIC_DIR, "uploads")
 
 # Authentication configuration for CMS access
-CMS_USERNAME = "admin"
-CMS_PASSWORD = "admin"
+CMS_USERNAME = os.getenv("SCOOPER_ADMIN_USER", "admin")
+CMS_PASSWORD = os.getenv("SCOOPER_ADMIN_PASS", "admin")
 
 # CSRF configuration
 CSRF_COOKIE_NAME = "csrf_token"
