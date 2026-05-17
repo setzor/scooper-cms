@@ -50,13 +50,17 @@ def parse_multipart_form(rfile, headers, content_length):
     if 'multipart/form-data' in content_type:
         boundary_match = re.search(r'boundary=([^\s;]+)', content_type)
         if boundary_match:
-            boundary = boundary_match.group(1)
+            boundary = boundary_match.group(1).strip('"')
     if not boundary:
         return []
     raw_data = rfile.read(content_length)
-    msg = email.message_from_bytes(raw_data)
+    
+    # Construct full message with Content-Type header for email parser
+    full_msg_bytes = f"Content-Type: {content_type}\r\n\r\n".encode('utf-8') + raw_data
+    msg = email.message_from_bytes(full_msg_bytes)
     fields = []
-    if msg.is_multipart():
+    # Check both is_multipart() and if boundary exists in content type
+    if msg.is_multipart() or 'multipart/form-data' in content_type:
         for part in msg.walk():
             content_disposition = part.get('Content-Disposition', '')
             if not content_disposition:
@@ -79,7 +83,7 @@ def parse_multipart_form(rfile, headers, content_length):
                     if isinstance(payload, bytes):
                         value = payload.decode('utf-8', errors='replace')
                     else:
-                        value = str(payload)
+                        value = str(payload) if payload is not None else ''
                     fields.append(MultipartField(name, None, value, None))
     return fields
 
