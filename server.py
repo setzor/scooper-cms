@@ -730,7 +730,7 @@ class ScooperHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 import traceback
                 traceback.print_exc()
-                self.send_error(500, str(e))
+                self.send_error(500, "Internal Server Error: An unexpected issue occurred.")
             return
         
         # Default 404
@@ -773,7 +773,9 @@ class ScooperHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(content)
             except Exception as e:
-                self.send_error(500, str(e))
+                import traceback
+                traceback.print_exc()
+                self.send_error(500, "Internal Server Error: An unexpected issue occurred.")
         else:
             self.send_error(404)
     
