@@ -1001,12 +1001,24 @@ def cms_stories_handler(path, params, form_data, handler, csrf_token=None):
             except:
                 pass
         
+        # Determine publish status
+        pub_raw = story.get('published', 0)
+        if isinstance(pub_raw, str):
+            is_published = pub_raw.lower() in ('1', 'true', 'yes', 'on')
+        else:
+            is_published = bool(pub_raw)
+        
+        status_badge_class = 'status-badge published' if is_published else 'status-badge draft'
+        
         formatted_stories.append({
             'id': story['id'],
             'title': story['title'],
             'category': story.get('category', 'General'),
             'author': story.get('author', 'Admin'),
-            'published': story.get('published', False),
+            'published': is_published,
+            'is_published': is_published,
+            'status_text': 'Published' if is_published else 'Draft',
+            'status_badge_class': status_badge_class,
             'published_at': display_date,
             'raw_date': raw_published_at or raw_created_at,
             'month': story_month,
