@@ -1340,6 +1340,16 @@ img[src=""] {
     background-color: rgba(0, 0, 0, 0.02);
 }
 
+.stories-table th:nth-child(1),
+.stories-table td:nth-child(1) {
+    width: 30%;
+}
+
+.stories-table th:nth-child(6),
+.stories-table td:nth-child(6) {
+    width: 15%;
+}
+
 .title-cell a {
     color: var(--cms-text);
     font-weight: 600;
