@@ -92,7 +92,7 @@
             <!-- Footer -->
             <footer class="paper-footer">
                 <div class="footer-container">
-                    <p>&copy; 2024 {{ site_title }}. All rights reserved.</p>
+                    <p>&copy; 2026 {{ site_title }}. All rights reserved.</p>
                     <div class="footer-links">
                         <a href="/cms" class="footer-cms-link">CMS Admin</a>
                     </div>
@@ -102,12 +102,15 @@
 
         <script src="/static/js/script.js"></script>
         <script>
-        // Hide empty images on story page
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.featured-image-container img[src=""]').forEach(function(img) {
-                img.closest('.featured-image-container').style.display = 'none';
+            // Hide empty images on story page
+            document.addEventListener("DOMContentLoaded", function () {
+                document
+                    .querySelectorAll('.featured-image-container img[src=""]')
+                    .forEach(function (img) {
+                        img.closest(".featured-image-container").style.display =
+                            "none";
+                    });
             });
-        });
         </script>
     </body>
 </html>
