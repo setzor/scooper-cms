@@ -25,7 +25,13 @@
                     <p class="tagline">{{ site_description }}</p>
                 </div>
                 <nav class="paper-nav">
-                    <button class="theme-toggle paper-theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode"><span id="theme-icon">{{ theme_icon }}</span></button>
+                    <button
+                        class="theme-toggle paper-theme-toggle"
+                        onclick="toggleTheme()"
+                        title="Toggle dark/light mode"
+                    >
+                        <span id="theme-icon">{{ theme_icon }}</span>
+                    </button>
                     <a href="/cms" class="cms-link">
                         <span>&#9881;</span> CMS
                     </a>
@@ -49,17 +55,27 @@
                                 </div>
                                 {% endif %}
                                 <div class="story-meta">
-                                    <span class="category-tag">{{ story.category }}</span>
-                                    <span class="date">{{ story.published_at }}</span>
+                                    <span class="category-tag"
+                                        >{{ story.category }}</span
+                                    >
+                                    <span class="date"
+                                        >{{ story.published_at }}</span
+                                    >
                                 </div>
                                 <h3 class="story-title">
-                                    <a href="/story/{{ story.slug }}">{{ story.title }}</a>
+                                    <a href="/story/{{ story.slug }}"
+                                        >{{ story.title }}</a
+                                    >
                                 </h3>
                                 <p class="story-excerpt">{{ story.excerpt }}</p>
                                 <div class="story-author">
                                     <span>By {{ story.author }}</span>
                                 </div>
-                                <a href="/story/{{ story.slug }}" class="read-more">Read More &raquo;</a>
+                                <a
+                                    href="/story/{{ story.slug }}"
+                                    class="read-more"
+                                    >Read More &raquo;</a
+                                >
                             </article>
                             {% endfor %}
                         </div>
@@ -68,19 +84,28 @@
                     {% if pagination.total_pages > 1 %}
                     <nav class="pagination" role="navigation">
                         {% if pagination.has_previous %}
-                        <a href="/?page={{ pagination.current_page - 1 }}" class="page-link prev" aria-label="Previous page">&laquo; Previous</a>
-                        {% endif %}
-                        {% for p in range(1, pagination.total_pages + 1) %}
-                            {% if p == pagination.current_page %}
-                            <span class="page-link current">{{ p }}</span>
-                            {% elif p <= 3 or p > pagination.total_pages - 3 or (p >= pagination.current_page - 1 and p <= pagination.current_page + 1) %}
-                            <a href="/?page={{ p }}" class="page-link">{{ p }}</a>
-                            {% elif p == 4 or p == pagination.total_pages - 3 %}
-                            <span class="page-link ellipsis">...</span>
-                            {% endif %}
-                        {% endfor %}
-                        {% if pagination.has_next %}
-                        <a href="/?page={{ pagination.current_page + 1 }}" class="page-link next" aria-label="Next page">Next &raquo;</a>
+                        <a
+                            href="/?page={{ pagination.current_page - 1 }}"
+                            class="page-link prev"
+                            aria-label="Previous page"
+                            >&laquo; Previous</a
+                        >
+                        {% endif %} {% for p in range(1, pagination.total_pages
+                        + 1) %} {% if p == pagination.current_page %}
+                        <span class="page-link current">{{ p }}</span>
+                        {% elif p <= 3 or p > pagination.total_pages - 3 or (p
+                        >= pagination.current_page - 1 and p <=
+                        pagination.current_page + 1) %}
+                        <a href="/?page={{ p }}" class="page-link">{{ p }}</a>
+                        {% elif p == 4 or p == pagination.total_pages - 3 %}
+                        <span class="page-link ellipsis">...</span>
+                        {% endif %} {% endfor %} {% if pagination.has_next %}
+                        <a
+                            href="/?page={{ pagination.current_page + 1 }}"
+                            class="page-link next"
+                            aria-label="Next page"
+                            >Next &raquo;</a
+                        >
                         {% endif %}
                     </nav>
                     {% endif %}
@@ -90,7 +115,7 @@
             <!-- Footer -->
             <footer class="paper-footer">
                 <div class="footer-container">
-                    <p>&copy; 2024 {{ site_title }}. All rights reserved.</p>
+                    <p>&copy; 2026 {{ site_title }}. All rights reserved.</p>
                     <div class="footer-links">
                         <a href="/cms" class="footer-cms-link">CMS Admin</a>
                     </div>
@@ -100,12 +125,14 @@
 
         <script src="/static/js/script.js"></script>
         <script>
-        // Hide empty images on index page
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.story-image img[src=""]').forEach(function(img) {
-                img.closest('.story-image').style.display = 'none';
+            // Hide empty images on index page
+            document.addEventListener("DOMContentLoaded", function () {
+                document
+                    .querySelectorAll('.story-image img[src=""]')
+                    .forEach(function (img) {
+                        img.closest(".story-image").style.display = "none";
+                    });
             });
-        });
         </script>
     </body>
 </html>
