@@ -354,6 +354,8 @@ def create_story(data):
 
     slug = data.get("slug")
     base_slug = slug
+    # Validate category - fall back to General if not found
+    category = get_valid_category(data.get("category", "General"))
 
     while True:
         try:
@@ -366,7 +368,7 @@ def create_story(data):
                     data.get("content"),
                     data.get("excerpt"),
                     data.get("author", "Admin"),
-                    data.get("category", "General"),
+                    category,
                     data.get("featured_image"),
                     data.get("published", False),
                     data.get("published_at"),
@@ -384,6 +386,8 @@ def create_story(data):
 def update_story(story_id, data):
     """Update an existing story."""
     conn = get_db()
+    # Validate category - fall back to General if not found
+    category = get_valid_category(data.get("category", "General"))
     conn.execute(
         """UPDATE stories SET title = ?, slug = ?, content = ?, excerpt = ?,
            author = ?, category = ?, featured_image = ?, published = ?,
@@ -395,7 +399,7 @@ def update_story(story_id, data):
             data.get("content"),
             data.get("excerpt"),
             data.get("author", "Admin"),
-            data.get("category", "General"),
+            category,
             data.get("featured_image"),
             data.get("published", False),
             data.get("published_at"),
@@ -488,6 +492,32 @@ def get_all_categories():
     return [{"id": row["id"], "name": row["name"]} for row in rows]
 
 
+def ensure_general_category():
+    """Ensure the 'General' category exists in the database."""
+    conn = get_db()
+    cursor = conn.execute("SELECT id FROM categories WHERE name = ?", ("General",))
+    if cursor.fetchone() is None:
+        try:
+            conn.execute("INSERT INTO categories (name) VALUES (?)", ("General",))
+            conn.commit()
+        except sqlite3.IntegrityError:
+            pass
+    conn.close()
+
+
+def get_valid_category(name):
+    """Get a valid category name. If the category doesn't exist, returns 'General'."""
+    if not name:
+        return "General"
+    conn = get_db()
+    cursor = conn.execute("SELECT name FROM categories WHERE name = ?", (name,))
+    result = cursor.fetchone()
+    conn.close()
+    if result:
+        return name
+    return "General"
+
+
 def get_category_by_id(category_id):
     """Get a single category by ID."""
     try:
@@ -527,17 +557,40 @@ def create_category(name):
 
 
 def update_category(category_id, name):
-    """Update a category."""
+    """Update a category and cascade the change to stories."""
     conn = get_db()
-    conn.execute("UPDATE categories SET name = ? WHERE id = ?", (name, category_id))
+    # Fetch the old category name before updating
+    cursor = conn.execute("SELECT name FROM categories WHERE id = ?", (category_id,))
+    old_category = cursor.fetchone()
+    if old_category:
+        old_name = old_category["name"]
+        # Update the categories table
+        conn.execute("UPDATE categories SET name = ? WHERE id = ?", (name, category_id))
+        # Cascade update to stories table
+        conn.execute(
+            "UPDATE stories SET category = ? WHERE category = ?", (name, old_name)
+        )
     conn.commit()
     conn.close()
 
 
 def delete_category(category_id):
-    """Delete a category."""
+    """Delete a category. Prevents deletion of 'General'. Migrates stories to 'General' first."""
     conn = get_db()
-    conn.execute("DELETE FROM categories WHERE id = ?", (category_id,))
+    # Get the category name
+    cursor = conn.execute("SELECT name FROM categories WHERE id = ?", (category_id,))
+    category = cursor.fetchone()
+    if category:
+        name = category["name"]
+        # Prevent deletion of General category
+        if name == "General":
+            conn.close()
+            return
+        # Migrate stories to General before deleting
+        conn.execute(
+            "UPDATE stories SET category = ? WHERE category = ?", ("General", name)
+        )
+        conn.execute("DELETE FROM categories WHERE id = ?", (category_id,))
     conn.commit()
     conn.close()
 
@@ -1014,11 +1067,9 @@ def cms_stories_handler(path, params, form_data, handler, csrf_token=None):
     )
 
     # Get all available categories for filter dropdown
+    ensure_general_category()
     all_categories = get_all_categories()
     category_names = sorted(set([c["name"] for c in all_categories]))
-    # Ensure we have at least General
-    if "General" not in category_names:
-        category_names.insert(0, "General")
 
     # Format categories with selected state for dropdown
     formatted_categories = []
@@ -1245,32 +1296,13 @@ def cms_create_handler(path, params, form_data, handler, csrf_token=None):
         # Redirect to stories list
         return "", 302, {"Location": "/cms/stories"}
 
-    # Get categories from DB and merge with defaults
-    db_categories = get_all_categories()
-    default_categories = [
-        "General",
-        "Local News",
-        "Technology",
-        "Business",
-        "Sports",
-        "Entertainment",
-        "Announcement",
-    ]
-
-    # Create list of unique category names (defaults + custom)
-    all_category_names = list(
-        set(default_categories + [c["name"] for c in db_categories])
-    )
-    all_category_names.sort()
-
-    # Build categories list with DB IDs where available
-    categories = []
-    for cat_name in all_category_names:
-        matching = [c for c in db_categories if c["name"] == cat_name]
-        if matching:
-            categories.append(matching[0])
-        else:
-            categories.append({"id": None, "name": cat_name})
+    # Get categories from DB only
+    categories = get_all_categories()
+    # Ensure General exists
+    ensure_general_category()
+    # Re-fetch in case General was just created
+    categories = get_all_categories()
+    categories.sort(key=lambda c: c["name"])
 
     theme_icon = get_theme_icon(theme)
 
@@ -1334,19 +1366,12 @@ def cms_edit_handler(path, params, form_data, handler, csrf_token=None):
         return "", 302, {"Location": "/cms/stories"}
 
     categories = get_all_categories()
+    # Ensure General exists
+    ensure_general_category()
+    # Re-fetch in case General was just created
+    categories = get_all_categories()
+    categories.sort(key=lambda c: c["name"])
     theme_icon = get_theme_icon(theme)
-
-    # If no categories exist, use defaults
-    if not categories:
-        categories = [
-            {"id": None, "name": "General"},
-            {"id": None, "name": "Local News"},
-            {"id": None, "name": "Technology"},
-            {"id": None, "name": "Business"},
-            {"id": None, "name": "Sports"},
-            {"id": None, "name": "Entertainment"},
-            {"id": None, "name": "Announcement"},
-        ]
 
     context = {
         "site_title": get_setting("site_title", "Scooper"),
@@ -1450,36 +1475,12 @@ def cms_settings_handler(path, params, form_data, handler, csrf_token=None):
 
     theme_icon = get_theme_icon(theme)
 
-    # Get categories from DB and merge with defaults
-    db_categories = get_all_categories()
-
-    # Start with default categories
-    default_categories = [
-        "General",
-        "Local News",
-        "Technology",
-        "Business",
-        "Sports",
-        "Entertainment",
-        "Announcement",
-    ]
-    categories = [{"id": None, "name": name} for name in default_categories]
-
-    # Add or merge DB categories
-    for db_cat in db_categories:
-        # Check if this category already exists in defaults
-        found = False
-        for i, cat in enumerate(categories):
-            if cat["name"] == db_cat["name"]:
-                # Replace default with DB category (which has an ID)
-                categories[i] = db_cat
-                found = True
-                break
-        if not found:
-            # Add new category from DB
-            categories.append(db_cat)
-
-    # Sort categories by name
+    # Get categories from DB only
+    categories = get_all_categories()
+    # Ensure General exists
+    ensure_general_category()
+    # Re-fetch in case General was just created
+    categories = get_all_categories()
     categories.sort(key=lambda c: c["name"])
 
     context = {
@@ -1617,6 +1618,8 @@ def main():
         for cat_name in default_categories:
             create_category(cat_name)
         print("Added default categories to database.")
+    # Ensure General always exists
+    ensure_general_category()
 
     # Start server
     server_address = (HOST, PORT)
