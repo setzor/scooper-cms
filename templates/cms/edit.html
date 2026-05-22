@@ -1,294 +1,437 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="{{ theme }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page_title }} - {{ site_title }}</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Quill Rich Text Editor - Open Source, MIT License, No Ads -->
-    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
-    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
-</head>
-<body class="theme-{{ theme }} cms-theme">
-    <div class="cms-layout">
-        <!-- Sidebar -->
-        <nav class="cms-sidebar">
-            <div class="cms-logo">
-                <a href="/">
-                    <span class="logo-icon">&#128241;</span>
-                    <span class="logo-text">Scooper</span>
-                </a>
-            </div>
-            <ul class="cms-nav">
-                <li><a href="/cms/dashboard" class="nav-item">
-                    <span class="nav-icon">&#128196;</span>
-                    <span>Dashboard</span>
-                </a></li>
-                <li><a href="/cms/stories" class="nav-item">
-                    <span class="nav-icon">&#128218;</span>
-                    <span>Stories</span>
-                </a></li>
-                <li><a href="/cms/create" class="nav-item">
-                    <span class="nav-icon">&#9998;</span>
-                    <span>New Story</span>
-                </a></li>
-                <li><a href="/cms/settings" class="nav-item">
-                    <span class="nav-icon">&#9881;</span>
-                    <span>Settings</span>
-                </a></li>
-            </ul>
-            <div class="cms-footer">
-                <a href="/" class="view-paper-btn" target="_blank">
-                    <span class="nav-icon">&#128240;</span>
-                    <span>View Paper</span>
-                </a>
-            </div>
-        </nav>
-
-        <!-- Main Content -->
-        <main class="cms-main">
-            <header class="cms-header">
-                <div class="header-left">
-                    <h1>{{ page_title }}</h1>
+<!doctype html>
+<html lang="en" data-theme="{{ theme }}" data-font="{{ font_family }}">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{{ page_title }} - {{ site_title }}</title>
+        <link rel="stylesheet" href="/static/css/style.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <!-- Quill Rich Text Editor - Open Source, MIT License, No Ads -->
+        <link
+            href="https://cdn.quilljs.com/1.3.7/quill.snow.css"
+            rel="stylesheet"
+        />
+        <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    </head>
+    <body class="theme-{{ theme }} cms-theme">
+        <div class="cms-layout">
+            <!-- Sidebar -->
+            <nav class="cms-sidebar">
+                <div class="cms-logo">
+                    <a href="/">
+                        <span class="logo-icon">&#128394;</span>
+                        <span class="logo-text">Pencil</span>
+                    </a>
                 </div>
-                <div class="header-right">
-                    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">
-                        <span id="theme-icon">{{ theme_icon }}</span>
-                    </button>
-                </div>
-            </header>
-
-            <div class="cms-content">
-                <form action="/cms/edit/{{ story.id }}" method="post" class="story-form" enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <div class="form-group">
-                        <label for="title">Title *</label>
-                        <input type="text" id="title" name="title" value="{{ story.title }}" required placeholder="Enter story title">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="excerpt">Excerpt</label>
-                        <textarea id="excerpt" name="excerpt" rows="3" placeholder="Short summary of the story (optional)">{{ story.excerpt }}</textarea>
-                        <p class="hint">This appears on the homepage. Leave blank to use first part of content.</p>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="content">Content *</label>
-                        <textarea id="content" name="content" style="display:none;">{{ story.content }}</textarea>
-                        <div id="quill-editor" style="height: 500px; margin-bottom: 10px;"></div>
-                        <p class="hint">Rich text editor with support for images, formatting, lists, and more.</p>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="author">Author</label>
-                            <input type="text" id="author" name="author" value="{{ story.author }}" placeholder="Author name">
-                        </div>
-                        <div class="form-group">
-                            <label for="category">Category</label>
-                            <select id="category" name="category">
-                                {% for cat in categories %}
-                                <option value="{{ cat.name }}" {% if cat.name == story.category %}selected{% endif %}>{{ cat.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="featured_image">Featured Image</label>
-                        <input type="file" id="featured_image" name="featured_image" accept="image/*">
-                        {% if story.featured_image %}
-                        <p class="hint">Current: <a href="{{ story.featured_image }}" target="_blank">{{ story.featured_image }}</a></p>
-                        <label class="remove-image-label">
-                            <input type="checkbox" name="remove_featured_image" value="1">
-                            <span>Remove current image</span>
-                        </label>
-                        {% endif %}
-                        <p class="hint">Upload a new image to replace, or leave blank to keep current. Supported: JPG, PNG, GIF, WebP, SVG.</p>
-                    </div>
-
-                    <div class="form-group publish-group">
-                        <label>
-                            <input type="checkbox" name="published" value="on" {% if story.published %}checked{% endif %}>
-                            <span class="checkbox-label">Publish immediately</span>
-                        </label>
-                        <p class="hint">Uncheck to save as draft.</p>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">
-                            <span>&#10003;</span> Update Story
-                        </button>
-                        <a href="/cms/preview/{{ story.id }}" class="btn btn-secondary" target="_blank">
-                            <span>&#128065;</span> Preview
+                <ul class="cms-nav">
+                    <li>
+                        <a href="/cms/dashboard" class="nav-item">
+                            <span class="nav-icon">&#128196;</span>
+                            <span>Dashboard</span>
                         </a>
-                        <a href="/cms/stories" class="btn btn-secondary">Cancel</a>
-                    </div>
-                </form>
-            </div>
-        </main>
-    </div>
+                    </li>
+                    <li>
+                        <a href="/cms/stories" class="nav-item">
+                            <span class="nav-icon">&#128218;</span>
+                            <span>Stories</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/cms/create" class="nav-item">
+                            <span class="nav-icon">&#9998;</span>
+                            <span>New Story</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/cms/settings" class="nav-item">
+                            <span class="nav-icon">&#9881;</span>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                </ul>
+                <div class="cms-footer">
+                    <a href="/" class="view-paper-btn" target="_blank">
+                        <span class="nav-icon">&#128196;</span>
+                        <span>View Paper</span>
+                    </a>
+                </div>
+            </nav>
 
-    <script src="/static/js/script.js"></script>
-    <script>
-        // Initialize Quill Editor with existing content
-        document.addEventListener('DOMContentLoaded', function() {
-            var contentTextarea = document.getElementById('content');
-            var quill = new Quill('#quill-editor', {
-                theme: 'snow',
-                placeholder: 'Write your story here...',
-                modules: {
-                    toolbar: [
-                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                        ['bold', 'italic', 'underline', 'strike'],
-                        ['blockquote', 'code-block'],
-                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                        [{ 'script': 'sub' }, { 'script': 'super' }],
-                        [{ 'indent': '-1' }, { 'indent': '+1' }],
-                        [{ 'direction': 'rtl' }],
-                        [{ 'size': ['small', false, 'large', 'huge'] }],
-                        [{ 'color': [] }, { 'background': [] }],
-                        [{ 'font': [] }],
-                        [{ 'align': [] }],
-                        ['link', 'image', 'video'],
-                        ['clean']
-                    ]
-                }
-            });
-            
-            // Load existing content
-            if (contentTextarea) {
-                quill.clipboard.dangerouslyPasteHTML(contentTextarea.value);
-            }
-            
-            // Sync Quill content to hidden textarea before form submission
-            var form = document.querySelector('form');
-            if (form) {
-                form.addEventListener('submit', function() {
-                    contentTextarea.value = quill.root.innerHTML;
+            <!-- Main Content -->
+            <main class="cms-main">
+                <header class="cms-header">
+                    <div class="header-left">
+                        <h1>{{ page_title }}</h1>
+                    </div>
+                    <div class="header-right">
+                        <button
+                            class="theme-toggle"
+                            onclick="toggleTheme()"
+                            title="Toggle dark/light mode"
+                        >
+                            <span id="theme-icon">{{ theme_icon }}</span>
+                        </button>
+                    </div>
+                </header>
+
+                <div class="cms-content">
+                    <form
+                        action="/cms/edit/{{ story.id }}"
+                        method="post"
+                        class="story-form"
+                        enctype="multipart/form-data"
+                    >
+                        <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="{{ csrf_token }}"
+                        />
+                        <div class="form-group">
+                            <label for="title">Title *</label>
+                            <input
+                                type="text"
+                                id="title"
+                                name="title"
+                                value="{{ story.title }}"
+                                required
+                                placeholder="Enter story title"
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="excerpt">Excerpt</label>
+                            <textarea
+                                id="excerpt"
+                                name="excerpt"
+                                rows="3"
+                                placeholder="Short summary of the story (optional)"
+                            >
+{{ story.excerpt }}</textarea
+                            >
+                            <p class="hint">
+                                This appears on the homepage. Leave blank to use
+                                first part of content.
+                            </p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="content">Content *</label>
+                            <textarea
+                                id="content"
+                                name="content"
+                                style="display: none"
+                            >
+{{ story.content }}</textarea
+                            >
+                            <div
+                                id="quill-editor"
+                                style="height: 500px; margin-bottom: 10px"
+                            ></div>
+                            <p class="hint">
+                                Rich text editor with support for images,
+                                formatting, lists, and more.
+                            </p>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="author">Author</label>
+                                <input
+                                    type="text"
+                                    id="author"
+                                    name="author"
+                                    value="{{ story.author }}"
+                                    placeholder="Author name"
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="category">Category</label>
+                                <select id="category" name="category">
+                                    {% for cat in categories %}
+                                    <option
+                                        value="{{ cat.name }}"
+                                        {%
+                                        if
+                                        cat.name=""
+                                        ="story.category"
+                                        %}selected{%
+                                        endif
+                                        %}
+                                    >
+                                        {{ cat.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="featured_image">Featured Image</label>
+                            <input
+                                type="file"
+                                id="featured_image"
+                                name="featured_image"
+                                accept="image/*"
+                            />
+                            {% if story.featured_image %}
+                            <p class="hint">
+                                Current:
+                                <a
+                                    href="{{ story.featured_image }}"
+                                    target="_blank"
+                                    >{{ story.featured_image }}</a
+                                >
+                            </p>
+                            <label class="remove-image-label">
+                                <input
+                                    type="checkbox"
+                                    name="remove_featured_image"
+                                    value="1"
+                                />
+                                <span>Remove current image</span>
+                            </label>
+                            {% endif %}
+                            <p class="hint">
+                                Upload a new image to replace, or leave blank to
+                                keep current. Supported: JPG, PNG, GIF, WebP,
+                                SVG.
+                            </p>
+                        </div>
+
+                        <div class="form-group publish-group">
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    name="published"
+                                    value="on"
+                                    {%
+                                    if
+                                    story.published
+                                    %}checked{%
+                                    endif
+                                    %}
+                                />
+                                <span class="checkbox-label"
+                                    >Publish immediately</span
+                                >
+                            </label>
+                            <p class="hint">Uncheck to save as draft.</p>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <span>&#10003;</span> Update Story
+                            </button>
+                            <a
+                                href="/cms/preview/{{ story.id }}"
+                                class="btn btn-secondary"
+                                target="_blank"
+                            >
+                                <span>&#128065;</span> Preview
+                            </a>
+                            <a href="/cms/stories" class="btn btn-secondary"
+                                >Cancel</a
+                            >
+                        </div>
+                    </form>
+                </div>
+            </main>
+        </div>
+
+        <script src="/static/js/script.js"></script>
+        <script>
+            // Initialize Quill Editor with existing content
+            document.addEventListener("DOMContentLoaded", function () {
+                var contentTextarea = document.getElementById("content");
+                var quill = new Quill("#quill-editor", {
+                    theme: "snow",
+                    placeholder: "Write your story here...",
+                    modules: {
+                        toolbar: [
+                            [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                            ["bold", "italic", "underline", "strike"],
+                            ["blockquote", "code-block"],
+                            [{ list: "ordered" }, { list: "bullet" }],
+                            [{ script: "sub" }, { script: "super" }],
+                            [{ indent: "-1" }, { indent: "+1" }],
+                            [{ direction: "rtl" }],
+                            [{ size: ["small", false, "large", "huge"] }],
+                            [{ color: [] }, { background: [] }],
+                            [{ font: [] }],
+                            [{ align: [] }],
+                            ["link", "image", "video"],
+                            ["clean"],
+                        ],
+                    },
                 });
-            }
-            
-            // Handle image uploads
-            quill.getModule('toolbar').addHandler('image', function() {
-                var input = document.createElement('input');
-                input.setAttribute('type', 'file');
-                input.setAttribute('accept', 'image/*');
-                input.onchange = function() {
-                    var file = this.files[0];
-                    if (file) {
-                        var reader = new FileReader();
-                        reader.onload = function(e) {
-                            var range = quill.getSelection();
-                            quill.insertEmbed(range.index, 'image', e.target.result);
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                };
-                input.click();
+
+                // Load existing content
+                if (contentTextarea) {
+                    quill.clipboard.dangerouslyPasteHTML(contentTextarea.value);
+                }
+
+                // Sync Quill content to hidden textarea before form submission
+                var form = document.querySelector("form");
+                if (form) {
+                    form.addEventListener("submit", function () {
+                        contentTextarea.value = quill.root.innerHTML;
+                    });
+                }
+
+                // Handle image uploads
+                quill.getModule("toolbar").addHandler("image", function () {
+                    var input = document.createElement("input");
+                    input.setAttribute("type", "file");
+                    input.setAttribute("accept", "image/*");
+                    input.onchange = function () {
+                        var file = this.files[0];
+                        if (file) {
+                            var reader = new FileReader();
+                            reader.onload = function (e) {
+                                var range = quill.getSelection();
+                                quill.insertEmbed(
+                                    range.index,
+                                    "image",
+                                    e.target.result,
+                                );
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    };
+                    input.click();
+                });
             });
-        });
-        
-        // ==========================================================================
-        // Auto-save draft to localStorage
-        // ==========================================================================
-        (function() {
-            var storyId = '{{ story.id }}';
-            var draftKey = 'scooper-draft-' + storyId;
-            var saveInterval = 30000; // 30 seconds
-            var saveTimeout;
-            
-            // Get all form data as an object
-            function getFormData() {
-                var quill = window.quill;
-                return {
-                    title: document.getElementById('title').value,
-                    excerpt: document.getElementById('excerpt').value,
-                    content: quill ? quill.root.innerHTML : document.getElementById('content').value,
-                    author: document.getElementById('author').value,
-                    category: document.getElementById('category').value,
-                    published: document.querySelector('input[name="published"]').checked
-                };
-            }
-            
-            // Save draft to localStorage
-            function saveDraft() {
-                var data = getFormData();
-                localStorage.setItem(draftKey, JSON.stringify({
-                    data: data,
-                    timestamp: Date.now()
-                }));
-                console.log('Draft saved at', new Date().toLocaleTimeString());
-            }
-            
-            // Load draft from localStorage
-            function loadDraft() {
-                var saved = localStorage.getItem(draftKey);
-                if (!saved) return;
-                
-                try {
-                    var draft = JSON.parse(saved);
-                    var data = draft.data;
-                    
-                    // Only auto-restore if the form is empty (new edit session)
-                    // or if the draft is more recent than the story's last save
-                    var titleEmpty = !document.getElementById('title').value || 
-                                     document.getElementById('title').value === '{{ story.title }}';
-                    
-                    // For edit page, check if the user is coming back to a draft
-                    // Simple heuristic: if title matches the original, it might be a fresh load
-                    if (titleEmpty) {
-                        if (confirm('We found a draft of this story from ' + 
-                                     new Date(draft.timestamp).toLocaleString() + '. Restore it?')) {
-                            document.getElementById('title').value = data.title || '';
-                            document.getElementById('excerpt').value = data.excerpt || '';
-                            if (window.quill) {
-                                window.quill.clipboard.dangerouslyPasteHTML(data.content || '');
-                            } else {
-                                document.getElementById('content').value = data.content || '';
-                            }
-                            document.getElementById('author').value = data.author || '';
-                            document.getElementById('category').value = data.category || '';
-                            if (data.published !== undefined) {
-                                document.querySelector('input[name="published"]').checked = data.published;
+
+            // ==========================================================================
+            // Auto-save draft to localStorage
+            // ==========================================================================
+            (function () {
+                var storyId = "{{ story.id }}";
+                var draftKey = "scooper-draft-" + storyId;
+                var saveInterval = 30000; // 30 seconds
+                var saveTimeout;
+
+                // Get all form data as an object
+                function getFormData() {
+                    var quill = window.quill;
+                    return {
+                        title: document.getElementById("title").value,
+                        excerpt: document.getElementById("excerpt").value,
+                        content: quill
+                            ? quill.root.innerHTML
+                            : document.getElementById("content").value,
+                        author: document.getElementById("author").value,
+                        category: document.getElementById("category").value,
+                        published: document.querySelector(
+                            'input[name="published"]',
+                        ).checked,
+                    };
+                }
+
+                // Save draft to localStorage
+                function saveDraft() {
+                    var data = getFormData();
+                    localStorage.setItem(
+                        draftKey,
+                        JSON.stringify({
+                            data: data,
+                            timestamp: Date.now(),
+                        }),
+                    );
+                    console.log(
+                        "Draft saved at",
+                        new Date().toLocaleTimeString(),
+                    );
+                }
+
+                // Load draft from localStorage
+                function loadDraft() {
+                    var saved = localStorage.getItem(draftKey);
+                    if (!saved) return;
+
+                    try {
+                        var draft = JSON.parse(saved);
+                        var data = draft.data;
+
+                        // Only auto-restore if the form is empty (new edit session)
+                        // or if the draft is more recent than the story's last save
+                        var titleEmpty =
+                            !document.getElementById("title").value ||
+                            document.getElementById("title").value ===
+                                "{{ story.title }}";
+
+                        // For edit page, check if the user is coming back to a draft
+                        // Simple heuristic: if title matches the original, it might be a fresh load
+                        if (titleEmpty) {
+                            if (
+                                confirm(
+                                    "We found a draft of this story from " +
+                                        new Date(
+                                            draft.timestamp,
+                                        ).toLocaleString() +
+                                        ". Restore it?",
+                                )
+                            ) {
+                                document.getElementById("title").value =
+                                    data.title || "";
+                                document.getElementById("excerpt").value =
+                                    data.excerpt || "";
+                                if (window.quill) {
+                                    window.quill.clipboard.dangerouslyPasteHTML(
+                                        data.content || "",
+                                    );
+                                } else {
+                                    document.getElementById("content").value =
+                                        data.content || "";
+                                }
+                                document.getElementById("author").value =
+                                    data.author || "";
+                                document.getElementById("category").value =
+                                    data.category || "";
+                                if (data.published !== undefined) {
+                                    document.querySelector(
+                                        'input[name="published"]',
+                                    ).checked = data.published;
+                                }
                             }
                         }
+                    } catch (e) {
+                        console.error("Error loading draft:", e);
                     }
-                } catch (e) {
-                    console.error('Error loading draft:', e);
                 }
-            }
-            
-            // Start auto-save
-            function startAutoSave() {
-                saveDraft(); // Save immediately on load
-                saveTimeout = setInterval(saveDraft, saveInterval);
-            }
-            
-            // Stop auto-save
-            function stopAutoSave() {
-                if (saveTimeout) {
-                    clearInterval(saveTimeout);
-                    saveTimeout = null;
+
+                // Start auto-save
+                function startAutoSave() {
+                    saveDraft(); // Save immediately on load
+                    saveTimeout = setInterval(saveDraft, saveInterval);
                 }
-            }
-            
-            // Clear draft on successful submission
-            var form = document.querySelector('form');
-            if (form) {
-                form.addEventListener('submit', function() {
-                    stopAutoSave();
-                    localStorage.removeItem(draftKey);
-                });
-            }
-            
-            // Initialize
-            loadDraft();
-            startAutoSave();
-        })();
-    </script>
-</body>
+
+                // Stop auto-save
+                function stopAutoSave() {
+                    if (saveTimeout) {
+                        clearInterval(saveTimeout);
+                        saveTimeout = null;
+                    }
+                }
+
+                // Clear draft on successful submission
+                var form = document.querySelector("form");
+                if (form) {
+                    form.addEventListener("submit", function () {
+                        stopAutoSave();
+                        localStorage.removeItem(draftKey);
+                    });
+                }
+
+                // Initialize
+                loadDraft();
+                startAutoSave();
+            })();
+        </script>
+    </body>
 </html>

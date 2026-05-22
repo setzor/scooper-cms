@@ -9,7 +9,7 @@
 :root {
     /* Light theme (default) */
     --theme: light;
-    
+
     /* Colors - Paper (Frontend) */
     --paper-bg: #faf8f5;
     --paper-text: #1a1a1a;
@@ -25,7 +25,7 @@
     --paper-link-hover: #004499;
     --paper-category-bg: #f0f0f0;
     --paper-category-text: #555555;
-    
+
     /* Colors - CMS (Backend) */
     --cms-sidebar-bg: #2a2a2a;
     --cms-sidebar-text: #cccccc;
@@ -38,13 +38,13 @@
     --cms-border: #e0e0e0;
     --cms-text: #1a1a1a;
     --cms-text-secondary: #555555;
-    
+
     /* Form elements */
     --form-input-bg: #ffffff;
     --form-input-border: #cccccc;
     --form-input-text: #1a1a1a;
     --form-label: #333333;
-    
+
     /* Buttons */
     --btn-primary-bg: #0066cc;
     --btn-primary-text: #ffffff;
@@ -54,26 +54,40 @@
     --btn-danger-bg: #cc3333;
     --btn-danger-text: #ffffff;
     --btn-danger-hover: #aa2929;
-    
+
     /* Shadows */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
     --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.1);
-    
+
     /* Typography */
-    --font-serif: 'Playfair Display', 'Source Serif Pro', Georgia, serif;
-    --font-body: 'Lora', 'Source Serif Pro', serif;
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    
+    --font-serif: "Playfair Display", "Source Serif Pro", Georgia, serif;
+    --font-body: "Lora", "Source Serif Pro", serif;
+    --font-sans:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
     /* Spacing */
     --sidebar-width: 240px;
     --header-height: 60px;
 }
 
+/* Font family switching */
+:root {
+    --font-body: var(--font-serif);
+}
+
+[data-font="serif"] {
+    --font-body: var(--font-serif);
+}
+
+[data-font="sans"] {
+    --font-body: var(--font-sans);
+}
+
 /* Dark theme variables */
 [data-theme="dark"] {
     --theme: dark;
-    
+
     /* Colors - Paper (Frontend) - Dark */
     --paper-bg: #1a1a1a;
     --paper-text: #f0f0f0;
@@ -89,7 +103,7 @@
     --paper-link-hover: #6fa8fc;
     --paper-category-bg: #3a3a3a;
     --paper-category-text: #cccccc;
-    
+
     /* Colors - CMS (Backend) - Dark */
     --cms-sidebar-bg: #1a1a1a;
     --cms-sidebar-text: #cccccc;
@@ -102,13 +116,13 @@
     --cms-border: #3a3a3a;
     --cms-text: #f0f0f0;
     --cms-text-secondary: #cccccc;
-    
+
     /* Form elements - Dark */
     --form-input-bg: #2a2a2a;
     --form-input-border: #444444;
     --form-input-text: #f0f0f0;
     --form-label: #f0f0f0;
-    
+
     /* Buttons - Dark */
     --btn-primary-bg: #4d90fe;
     --btn-primary-text: #ffffff;
@@ -118,7 +132,7 @@
     --btn-danger-bg: #cc3333;
     --btn-danger-text: #ffffff;
     --btn-danger-hover: #aa2929;
-    
+
     /* Shadows - Dark */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -128,7 +142,7 @@
 /* Rose Pine Dawn theme (light) */
 [data-theme="rose-pine-dawn"] {
     --theme: rose-pine-dawn;
-    
+
     /* Colors - Paper (Frontend) */
     --paper-bg: #faf4ed;
     --paper-text: #575279;
@@ -144,7 +158,7 @@
     --paper-link-hover: #b67049;
     --paper-category-bg: #f4ede8;
     --paper-category-text: #78716c;
-    
+
     /* Colors - CMS (Backend) */
     --cms-sidebar-bg: #575279;
     --cms-sidebar-text: #faf4ed;
@@ -157,13 +171,13 @@
     --cms-border: #f4ede8;
     --cms-text: #575279;
     --cms-text-secondary: #78716c;
-    
+
     /* Form elements */
     --form-input-bg: #fffaf3;
     --form-input-border: #f4ede8;
     --form-input-text: #575279;
     --form-label: #575279;
-    
+
     /* Buttons */
     --btn-primary-bg: #ea9d34;
     --btn-primary-text: #faf4ed;
@@ -173,7 +187,7 @@
     --btn-danger-bg: #cc3333;
     --btn-danger-text: #ffffff;
     --btn-danger-hover: #aa2929;
-    
+
     /* Shadows */
     --shadow-sm: 0 1px 2px rgba(93, 82, 121, 0.1);
     --shadow-md: 0 2px 4px rgba(93, 82, 121, 0.15);
@@ -183,7 +197,7 @@
 /* Rose Pine theme (dark) */
 [data-theme="rose-pine"] {
     --theme: rose-pine;
-    
+
     /* Colors - Paper (Frontend) */
     --paper-bg: #191724;
     --paper-text: #e0def4;
@@ -199,7 +213,7 @@
     --paper-link-hover: #f38ba8;
     --paper-category-bg: #26233a;
     --paper-category-text: #908caa;
-    
+
     /* Colors - CMS (Backend) */
     --cms-sidebar-bg: #1f1d2e;
     --cms-sidebar-text: #e0def4;
@@ -212,13 +226,13 @@
     --cms-border: #26233a;
     --cms-text: #e0def4;
     --cms-text-secondary: #908caa;
-    
+
     /* Form elements */
     --form-input-bg: #1f1d2e;
     --form-input-border: #26233a;
     --form-input-text: #e0def4;
     --form-label: #e0def4;
-    
+
     /* Buttons */
     --btn-primary-bg: #ebbcba;
     --btn-primary-text: #191724;
@@ -228,7 +242,7 @@
     --btn-danger-bg: #f38ba8;
     --btn-danger-text: #191724;
     --btn-danger-hover: #d96d88;
-    
+
     /* Shadows */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -238,7 +252,7 @@
 /* Catpuccin Latte theme (light) */
 [data-theme="catpuccin-latte"] {
     --theme: catpuccin-latte;
-    
+
     /* Colors - Paper (Frontend) */
     --paper-bg: #eff1f5;
     --paper-text: #4c4f69;
@@ -254,7 +268,7 @@
     --paper-link-hover: #5e81ac;
     --paper-category-bg: #f5f7fa;
     --paper-category-text: #5c5f77;
-    
+
     /* Colors - CMS (Backend) */
     --cms-sidebar-bg: #4c4f69;
     --cms-sidebar-text: #eff1f5;
@@ -267,13 +281,13 @@
     --cms-border: #dce0e8;
     --cms-text: #4c4f69;
     --cms-text-secondary: #5c5f77;
-    
+
     /* Form elements */
     --form-input-bg: #ffffff;
     --form-input-border: #dce0e8;
     --form-input-text: #4c4f69;
     --form-label: #4c4f69;
-    
+
     /* Buttons */
     --btn-primary-bg: #88c0d0;
     --btn-primary-text: #ffffff;
@@ -283,7 +297,7 @@
     --btn-danger-bg: #bf616a;
     --btn-danger-text: #ffffff;
     --btn-danger-hover: #9c424b;
-    
+
     /* Shadows */
     --shadow-sm: 0 1px 2px rgba(76, 79, 105, 0.1);
     --shadow-md: 0 2px 4px rgba(76, 79, 105, 0.15);
@@ -293,7 +307,7 @@
 /* Catpuccin Frappe theme (dark) */
 [data-theme="catpuccin-frappe"] {
     --theme: catpuccin-frappe;
-    
+
     /* Colors - Paper (Frontend) */
     --paper-bg: #303446;
     --paper-text: #c6d0f5;
@@ -309,7 +323,7 @@
     --paper-link-hover: #67b0a8;
     --paper-category-bg: #3c4058;
     --paper-category-text: #b5bfe2;
-    
+
     /* Colors - CMS (Backend) */
     --cms-sidebar-bg: #292c3c;
     --cms-sidebar-text: #c6d0f5;
@@ -322,13 +336,13 @@
     --cms-border: #3c4058;
     --cms-text: #c6d0f5;
     --cms-text-secondary: #b5bfe2;
-    
+
     /* Form elements */
     --form-input-bg: #292c3c;
     --form-input-border: #3c4058;
     --form-input-text: #c6d0f5;
     --form-label: #c6d0f5;
-    
+
     /* Buttons */
     --btn-primary-bg: #81c8be;
     --btn-primary-text: #292c3c;
@@ -338,7 +352,7 @@
     --btn-danger-bg: #e78284;
     --btn-danger-text: #292c3c;
     --btn-danger-hover: #c9696e;
-    
+
     /* Shadows */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -348,7 +362,7 @@
 /* Catpuccin Macchiato theme (dark) */
 [data-theme="catpuccin-macchiato"] {
     --theme: catpuccin-macchiato;
-    
+
     /* Colors - Paper (Frontend) */
     --paper-bg: #24273a;
     --paper-text: #cad3f5;
@@ -364,7 +378,7 @@
     --paper-link-hover: #74c7ec;
     --paper-category-bg: #363a4f;
     --paper-category-text: #b8c0e0;
-    
+
     /* Colors - CMS (Backend) */
     --cms-sidebar-bg: #1e2030;
     --cms-sidebar-text: #cad3f5;
@@ -377,13 +391,13 @@
     --cms-border: #363a4f;
     --cms-text: #cad3f5;
     --cms-text-secondary: #b8c0e0;
-    
+
     /* Form elements */
     --form-input-bg: #1e2030;
     --form-input-border: #363a4f;
     --form-input-text: #cad3f5;
     --form-label: #cad3f5;
-    
+
     /* Buttons */
     --btn-primary-bg: #89ddff;
     --btn-primary-text: #1e2030;
@@ -393,7 +407,7 @@
     --btn-danger-bg: #ed8796;
     --btn-danger-text: #1e2030;
     --btn-danger-hover: #d47381;
-    
+
     /* Shadows */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -403,7 +417,7 @@
 /* Catpuccin Mocha theme (dark) */
 [data-theme="catpuccin-mocha"] {
     --theme: catpuccin-mocha;
-    
+
     /* Colors - Paper (Frontend) */
     --paper-bg: #1e1e2e;
     --paper-text: #cdd6f4;
@@ -419,7 +433,7 @@
     --paper-link-hover: #f5e0dc;
     --paper-category-bg: #313244;
     --paper-category-text: #bac2de;
-    
+
     /* Colors - CMS (Backend) */
     --cms-sidebar-bg: #181825;
     --cms-sidebar-text: #cdd6f4;
@@ -432,13 +446,13 @@
     --cms-border: #313244;
     --cms-text: #cdd6f4;
     --cms-text-secondary: #bac2de;
-    
+
     /* Form elements */
     --form-input-bg: #181825;
     --form-input-border: #313244;
     --form-input-text: #cdd6f4;
     --form-label: #cdd6f4;
-    
+
     /* Buttons */
     --btn-primary-bg: #cba6f7;
     --btn-primary-text: #181825;
@@ -448,20 +462,26 @@
     --btn-danger-bg: #f5e0dc;
     --btn-danger-text: #181825;
     --btn-danger-hover: #f3cba9;
-    
+
     /* Shadows */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.4);
 }
 
-
 /* ==========================================================================
    Reset & Base Styles
-   ========================================================================== */==========================================================================
-   Reset & Base Styles
    ========================================================================== */
-*, *::before, *::after {
+==========================================================================
+    Reset
+    &
+    Base
+    Styles
+    ==========================================================================
+    */
+    *,
+*::before,
+*::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -476,7 +496,9 @@ body {
     line-height: 1.6;
     color: var(--paper-text);
     background-color: var(--paper-bg);
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition:
+        background-color 0.3s ease,
+        color 0.3s ease;
 }
 
 a {
@@ -503,7 +525,6 @@ img[src=""] {
 .story-image img {
     display: block;
 }
-
 
 /* ==========================================================================
    PAPER LAYOUT (Frontend)
@@ -855,7 +876,6 @@ img[src=""] {
     text-decoration: underline;
 }
 
-
 /* ==========================================================================
    CMS LAYOUT (Backend)
    ========================================================================== */
@@ -1155,7 +1175,9 @@ img[src=""] {
     border-radius: 4px;
     background-color: var(--form-input-bg);
     color: var(--form-input-text);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 .filter-input:focus {
@@ -1432,7 +1454,9 @@ img[src=""] {
     font-size: 0.95rem;
     color: var(--form-input-text);
     background-color: var(--form-input-bg);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 .form-group input:focus,
@@ -1602,7 +1626,6 @@ img[src=""] {
     font-weight: 600;
 }
 
-
 /* ==========================================================================
    Responsive Design
    ========================================================================== */
@@ -1612,75 +1635,74 @@ img[src=""] {
     .stories-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .single-story {
         padding: 1.5rem;
     }
-    
+
     .footer-container {
         flex-direction: column;
         gap: 1rem;
         text-align: center;
     }
-    
+
     /* CMS layout */
     .cms-layout {
         flex-direction: column;
     }
-    
+
     .cms-sidebar {
         width: 100%;
         height: auto;
         position: relative;
     }
-    
+
     .cms-main {
         margin-left: 0;
     }
-    
+
     .cms-header {
         padding: 0 1rem;
     }
-    
+
     .cms-content {
         padding: 1rem;
     }
-    
+
     .dashboard-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .dashboard-card.recent-stories {
         grid-column: span 1;
     }
-    
+
     .form-row {
         grid-template-columns: 1fr;
     }
-    
+
     .stories-table {
         font-size: 0.85rem;
     }
-    
+
     .stories-table th,
     .stories-table td {
         padding: 0.75rem 0.5rem;
     }
-    
+
     .actions-cell {
         white-space: normal;
     }
-    
+
     .cms-footer {
         display: none;
     }
-    
+
     .paper-nav {
         top: 1rem;
         right: 1rem;
     }
 }
-
 
 /* ==========================================================================
    Print Styles
@@ -1695,17 +1717,16 @@ img[src=""] {
     .footer-container {
         display: none !important;
     }
-    
+
     .paper-main {
         padding: 0;
     }
-    
+
     .single-story {
         border: none;
         box-shadow: none;
     }
 }
-
 
 /* ==========================================================================
    Animations & Transitions
@@ -1726,13 +1747,24 @@ img[src=""] {
     animation: fadeIn 0.3s ease forwards;
 }
 
-.story-card:nth-child(1) { animation-delay: 0.1s; }
-.story-card:nth-child(2) { animation-delay: 0.2s; }
-.story-card:nth-child(3) { animation-delay: 0.3s; }
-.story-card:nth-child(4) { animation-delay: 0.4s; }
-.story-card:nth-child(5) { animation-delay: 0.5s; }
-.story-card:nth-child(6) { animation-delay: 0.6s; }
-
+.story-card:nth-child(1) {
+    animation-delay: 0.1s;
+}
+.story-card:nth-child(2) {
+    animation-delay: 0.2s;
+}
+.story-card:nth-child(3) {
+    animation-delay: 0.3s;
+}
+.story-card:nth-child(4) {
+    animation-delay: 0.4s;
+}
+.story-card:nth-child(5) {
+    animation-delay: 0.5s;
+}
+.story-card:nth-child(6) {
+    animation-delay: 0.6s;
+}
 
 /* ==========================================================================
    Scrollbar Styling
@@ -1756,7 +1788,6 @@ img[src=""] {
     background: var(--cms-text-secondary);
 }
 
-
 /* ==========================================================================
    Utility Classes
    ========================================================================== */
@@ -1769,15 +1800,31 @@ img[src=""] {
     color: var(--paper-text-muted);
 }
 
-.mt-1 { margin-top: 0.5rem; }
-.mt-2 { margin-top: 1rem; }
-.mt-3 { margin-top: 1.5rem; }
-.mt-4 { margin-top: 2rem; }
+.mt-1 {
+    margin-top: 0.5rem;
+}
+.mt-2 {
+    margin-top: 1rem;
+}
+.mt-3 {
+    margin-top: 1.5rem;
+}
+.mt-4 {
+    margin-top: 2rem;
+}
 
-.mb-1 { margin-bottom: 0.5rem; }
-.mb-2 { margin-bottom: 1rem; }
-.mb-3 { margin-bottom: 1.5rem; }
-.mb-4 { margin-bottom: 2rem; }
+.mb-1 {
+    margin-bottom: 0.5rem;
+}
+.mb-2 {
+    margin-bottom: 1rem;
+}
+.mb-3 {
+    margin-bottom: 1.5rem;
+}
+.mb-4 {
+    margin-bottom: 2rem;
+}
 
 /* ==========================================================================
    Pagination
@@ -1903,7 +1950,7 @@ img[src=""] {
 
 .preview-header {
     flex: 0 0 25%;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .preview-body {
@@ -1912,7 +1959,7 @@ img[src=""] {
 
 .preview-footer {
     flex: 0 0 20%;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .preview-accents {

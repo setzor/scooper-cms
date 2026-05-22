@@ -951,6 +951,7 @@ def paper_home_handler(path, params, form_data, handler):
         )
 
     theme_icon = get_theme_icon(theme)
+    font_family = get_setting("font_family", "serif")
 
     # Pagination info
     total_pages = (total_count + 9) // 10  # Ceiling division
@@ -960,6 +961,7 @@ def paper_home_handler(path, params, form_data, handler):
         "site_description": site_description,
         "theme": theme,
         "theme_icon": theme_icon,
+        "font_family": font_family,
         "stories": formatted_stories,
         "pagination": {
             "current_page": page,
@@ -986,12 +988,14 @@ def paper_story_handler(path, params, form_data, handler):
     site_title = get_setting("site_title", "Scooper Paper")
     site_description = get_setting("site_description", "Your News, Delivered")
     theme_icon = get_theme_icon(theme)
+    font_family = get_setting("font_family", "serif")
 
     context = {
         "site_title": site_title,
         "site_description": site_description,
         "theme": theme,
         "theme_icon": theme_icon,
+        "font_family": font_family,
         "is_preview": params.get("preview", False),
         "story": {
             "id": story["id"],
@@ -1033,6 +1037,7 @@ def cms_dashboard_handler(path, params, form_data, handler, csrf_token=None):
         "page_title": "Dashboard",
         "theme": theme,
         "theme_icon": get_theme_icon(theme),
+        "font_family": get_setting("font_family", "serif"),
         "stories": stories,
         "total_stories": total_count,
         "published_count": published_count,
@@ -1233,6 +1238,7 @@ def cms_stories_handler(path, params, form_data, handler, csrf_token=None):
         "page_title": "All Stories",
         "theme": theme,
         "theme_icon": theme_icon,
+        "font_family": get_setting("font_family", "serif"),
         "stories": formatted_stories,
         "search_query": search_query,
         "category_filter": category_filter,
@@ -1305,12 +1311,14 @@ def cms_create_handler(path, params, form_data, handler, csrf_token=None):
     categories.sort(key=lambda c: c["name"])
 
     theme_icon = get_theme_icon(theme)
+    font_family = get_setting("font_family", "serif")
 
     context = {
         "site_title": get_setting("site_title", "Scooper"),
         "page_title": "Create New Story",
         "theme": theme,
         "theme_icon": theme_icon,
+        "font_family": font_family,
         "categories": categories,
         "csrf_token": csrf_token or "",
     }
@@ -1372,12 +1380,14 @@ def cms_edit_handler(path, params, form_data, handler, csrf_token=None):
     categories = get_all_categories()
     categories.sort(key=lambda c: c["name"])
     theme_icon = get_theme_icon(theme)
+    font_family = get_setting("font_family", "serif")
 
     context = {
         "site_title": get_setting("site_title", "Scooper"),
         "page_title": f"Edit: {story['title']}",
         "theme": theme,
         "theme_icon": theme_icon,
+        "font_family": font_family,
         "story": {
             "id": story["id"],
             "title": story["title"],
@@ -1418,12 +1428,14 @@ def cms_preview_handler(path, params, form_data, handler, csrf_token=None):
     site_title = get_setting("site_title", "Scooper Paper")
     site_description = get_setting("site_description", "Your News, Delivered")
     theme_icon = get_theme_icon(theme)
+    font_family = get_setting("font_family", "serif")
 
     context = {
         "site_title": site_title,
         "site_description": site_description,
         "theme": theme,
         "theme_icon": theme_icon,
+        "font_family": font_family,
         "is_preview": True,
         "story": {
             "id": story["id"],
@@ -1453,6 +1465,8 @@ def cms_settings_handler(path, params, form_data, handler, csrf_token=None):
             set_setting("site_description", form_data["site_description"])
         if "theme" in form_data:
             set_setting("theme", form_data["theme"])
+        if "font_family" in form_data:
+            set_setting("font_family", form_data["font_family"])
 
         # Handle category operations
         # Add new category
@@ -1483,11 +1497,14 @@ def cms_settings_handler(path, params, form_data, handler, csrf_token=None):
     categories = get_all_categories()
     categories.sort(key=lambda c: c["name"])
 
+    font_family = get_setting("font_family", "serif")
+
     context = {
         "site_title": get_setting("site_title", "Scooper"),
         "page_title": "Settings",
         "theme": theme,
         "theme_icon": theme_icon,
+        "font_family": font_family,
         "site_title_value": get_setting("site_title", "Scooper Paper"),
         "site_description_value": get_setting(
             "site_description", "Your News, Delivered"

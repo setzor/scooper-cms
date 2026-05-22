@@ -1,123 +1,204 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="{{ theme }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page_title }} - {{ site_title }}</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body class="theme-{{ theme }} cms-theme">
-    <div class="cms-layout">
-        <!-- Sidebar -->
-        <nav class="cms-sidebar">
-            <div class="cms-logo">
-                <a href="/">
-                    <span class="logo-icon">&#128241;</span>
-                    <span class="logo-text">Scooper</span>
-                </a>
-            </div>
-            <ul class="cms-nav">
-                <li><a href="/cms/dashboard" class="nav-item">
-                    <span class="nav-icon">&#128196;</span>
-                    <span>Dashboard</span>
-                </a></li>
-                <li><a href="/cms/stories" class="nav-item active">
-                    <span class="nav-icon">&#128218;</span>
-                    <span>Stories</span>
-                </a></li>
-                <li><a href="/cms/create" class="nav-item">
-                    <span class="nav-icon">&#9998;</span>
-                    <span>New Story</span>
-                </a></li>
-                <li><a href="/cms/settings" class="nav-item">
-                    <span class="nav-icon">&#9881;</span>
-                    <span>Settings</span>
-                </a></li>
-            </ul>
-            <div class="cms-footer">
-                <a href="/" class="view-paper-btn" target="_blank">
-                    <span class="nav-icon">&#128240;</span>
-                    <span>View Paper</span>
-                </a>
-            </div>
-        </nav>
-
-        <!-- Main Content -->
-        <main class="cms-main">
-            <header class="cms-header">
-                <div class="header-left">
-                    <h1>{{ page_title }}</h1>
+<!doctype html>
+<html lang="en" data-theme="{{ theme }}" data-font="{{ font_family }}">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{{ page_title }} - {{ site_title }}</title>
+        <link rel="stylesheet" href="/static/css/style.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body class="theme-{{ theme }} cms-theme">
+        <div class="cms-layout">
+            <!-- Sidebar -->
+            <nav class="cms-sidebar">
+                <div class="cms-logo">
+                    <a href="/">
+                        <span class="logo-icon">&#128394;</span>
+                        <span class="logo-text">Pencil</span>
+                    </a>
                 </div>
-                <div class="header-right">
-                    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">
-                        <span id="theme-icon">{{ theme_icon }}</span>
-                    </button>
+                <ul class="cms-nav">
+                    <li>
+                        <a href="/cms/dashboard" class="nav-item">
+                            <span class="nav-icon">&#128196;</span>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/cms/stories" class="nav-item active">
+                            <span class="nav-icon">&#128218;</span>
+                            <span>Stories</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/cms/create" class="nav-item">
+                            <span class="nav-icon">&#9998;</span>
+                            <span>New Story</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/cms/settings" class="nav-item">
+                            <span class="nav-icon">&#9881;</span>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                </ul>
+                <div class="cms-footer">
+                    <a href="/" class="view-paper-btn" target="_blank">
+                        <span class="nav-icon">&#128196;</span>
+                        <span>View Paper</span>
+                    </a>
                 </div>
-            </header>
+            </nav>
 
-            <div class="cms-content">
-                <!-- Filter Bar -->
-                <div class="filter-bar">
-                    <div class="filter-row" id="filter-row">
+            <!-- Main Content -->
+            <main class="cms-main">
+                <header class="cms-header">
+                    <div class="header-left">
+                        <h1>{{ page_title }}</h1>
+                    </div>
+                    <div class="header-right">
+                        <button
+                            class="theme-toggle"
+                            onclick="toggleTheme()"
+                            title="Toggle dark/light mode"
+                        >
+                            <span id="theme-icon">{{ theme_icon }}</span>
+                        </button>
+                    </div>
+                </header>
+
+                <div class="cms-content">
+                    <!-- Filter Bar -->
+                    <div class="filter-bar">
+                        <div class="filter-row" id="filter-row">
                             <div class="filter-group search-group">
-                                <label for="q" class="filter-label">&#128269; Search</label>
-                                <input 
-                                    type="text" 
-                                    id="q" 
-                                    name="q" 
-                                    class="filter-input filter-search" 
+                                <label for="q" class="filter-label"
+                                    >&#128269; Search</label
+                                >
+                                <input
+                                    type="text"
+                                    id="q"
+                                    name="q"
+                                    class="filter-input filter-search"
                                     placeholder="Search by title or content..."
                                     value="{{ search_query }}"
                                     autocomplete="new-password"
-                                >
+                                />
                             </div>
-                            
+
                             <div class="filter-group">
-                                <label for="category" class="filter-label">Category</label>
-                                <select id="category" name="category" class="filter-input filter-select">
+                                <label for="category" class="filter-label"
+                                    >Category</label
+                                >
+                                <select
+                                    id="category"
+                                    name="category"
+                                    class="filter-input filter-select"
+                                >
                                     <option value="">All Categories</option>
                                     {% for cat in categories %}
-                                    <option value="{{ cat.name }}" {% if cat.selected %}selected{% endif %}>{{ cat.name }}</option>
+                                    <option
+                                        value="{{ cat.name }}"
+                                        {%
+                                        if
+                                        cat.selected
+                                        %}selected{%
+                                        endif
+                                        %}
+                                    >
+                                        {{ cat.name }}
+                                    </option>
                                     {% endfor %}
                                 </select>
                             </div>
-                            
+
                             <div class="filter-group">
-                                <label for="status" class="filter-label">Status</label>
-                                <select id="status" name="status" class="filter-input filter-select">
+                                <label for="status" class="filter-label"
+                                    >Status</label
+                                >
+                                <select
+                                    id="status"
+                                    name="status"
+                                    class="filter-input filter-select"
+                                >
                                     <option value="">All Statuses</option>
-                                    <option value="published" {% if status_filter == 'published' %}selected{% endif %}>Published</option>
-                                    <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+                                    <option
+                                        value="published"
+                                        {%
+                                        if
+                                        status_filter=""
+                                        ="published"
+                                        %}selected{%
+                                        endif
+                                        %}
+                                    >
+                                        Published
+                                    </option>
+                                    <option
+                                        value="draft"
+                                        {%
+                                        if
+                                        status_filter=""
+                                        ="draft"
+                                        %}selected{%
+                                        endif
+                                        %}
+                                    >
+                                        Draft
+                                    </option>
                                 </select>
                             </div>
-                            
+
                             <div class="filter-group">
-                                <label for="month" class="filter-label">Month</label>
-                                <select id="month" name="month" class="filter-input filter-select">
+                                <label for="month" class="filter-label"
+                                    >Month</label
+                                >
+                                <select
+                                    id="month"
+                                    name="month"
+                                    class="filter-input filter-select"
+                                >
                                     <option value="">All Months</option>
                                     {% for mon in months %}
-                                    <option value="{{ mon.value }}" {% if mon.selected %}selected{% endif %}>{{ mon.display }}</option>
+                                    <option
+                                        value="{{ mon.value }}"
+                                        {%
+                                        if
+                                        mon.selected
+                                        %}selected{%
+                                        endif
+                                        %}
+                                    >
+                                        {{ mon.display }}
+                                    </option>
                                     {% endfor %}
                                 </select>
                             </div>
-                            
 
-                            
                             <div class="filter-actions">
-                                <button type="submit" class="btn btn-primary filter-btn">
+                                <button
+                                    type="submit"
+                                    class="btn btn-primary filter-btn"
+                                >
                                     <span>&#128269;</span> Apply Filters
                                 </button>
                                 {% if has_filters %}
-                                <a href="/cms/stories" class="btn btn-secondary filter-btn">
+                                <a
+                                    href="/cms/stories"
+                                    class="btn btn-secondary filter-btn"
+                                >
                                     <span>&#10006;</span> Clear
                                 </a>
                                 {% endif %}
                             </div>
                         </div>
-                        
+
                         <!-- Active Filters Display -->
                         {% if has_filters %}
                         <div class="active-filters">
@@ -125,173 +206,238 @@
                             {% for tag in active_filter_tags %}
                             <span class="filter-tag">
                                 {{ tag.label }}
-                                <a href="/cms/stories" class="remove-filter" onclick="return removeFilter('{{ tag.param }}')">&#10006;</a>
+                                <a
+                                    href="/cms/stories"
+                                    class="remove-filter"
+                                    onclick="return removeFilter('{{ tag.param }}')"
+                                    >&#10006;</a
+                                >
                             </span>
                             {% endfor %}
                         </div>
                         {% endif %}
                     </div>
 
-                <div class="toolbar">
-                    <a href="/cms/create" class="btn btn-primary">
-                        <span>&#10010;</span> Create New Story
-                    </a>
-                    <span class="story-count">{{ total_count }} stories found</span>
-                </div>
+                    <div class="toolbar">
+                        <a href="/cms/create" class="btn btn-primary">
+                            <span>&#10010;</span> Create New Story
+                        </a>
+                        <span class="story-count"
+                            >{{ total_count }} stories found</span
+                        >
+                    </div>
 
-                <!-- Stories Table -->
-                <div class="table-container">
-                    <table class="stories-table">
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Category</th>
-                                <th>Author</th>
-                                <th>Date</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for story in stories %}
-                            <tr>
-                                <td class="title-cell">
-                                    <a href="/cms/edit/{{ story.id }}">{{ story.title }}</a>
-                                </td>
-                                <td>{{ story.category }}</td>
-                                <td>{{ story.author }}</td>
-                                <td>{{ story.published_at }}</td>
-                                <td>
-                                    <span class="{{ story.status_badge_class }}">{{ story.status_text }}</span>
-                                </td>
-                                <td class="actions-cell">
-                                    <a href="/cms/preview/{{ story.id }}" class="btn btn-small btn-secondary" title="Preview" style="width: auto; height: auto;">Preview</a>
-                                    <a href="/cms/edit/{{ story.id }}" class="btn btn-small btn-secondary" title="Edit" style="width: auto; height: auto;">Edit</a>
-                                    <form method="POST" action="/cms/delete/{{ story.id }}" class="delete-form" onsubmit="return confirm('Are you sure you want to delete this story?')" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                        <button type="submit" class="btn btn-small btn-danger" title="Delete" style="width: auto; height: auto;">Delete</button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                    <!-- Stories Table -->
+                    <div class="table-container">
+                        <table class="stories-table">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Author</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for story in stories %}
+                                <tr>
+                                    <td class="title-cell">
+                                        <a href="/cms/edit/{{ story.id }}"
+                                            >{{ story.title }}</a
+                                        >
+                                    </td>
+                                    <td>{{ story.category }}</td>
+                                    <td>{{ story.author }}</td>
+                                    <td>{{ story.published_at }}</td>
+                                    <td>
+                                        <span
+                                            class="{{ story.status_badge_class }}"
+                                            >{{ story.status_text }}</span
+                                        >
+                                    </td>
+                                    <td class="actions-cell">
+                                        <a
+                                            href="/cms/preview/{{ story.id }}"
+                                            class="btn btn-small btn-secondary"
+                                            title="Preview"
+                                            style="width: auto; height: auto"
+                                            >Preview</a
+                                        >
+                                        <a
+                                            href="/cms/edit/{{ story.id }}"
+                                            class="btn btn-small btn-secondary"
+                                            title="Edit"
+                                            style="width: auto; height: auto"
+                                            >Edit</a
+                                        >
+                                        <form
+                                            method="POST"
+                                            action="/cms/delete/{{ story.id }}"
+                                            class="delete-form"
+                                            onsubmit="
+                                                return confirm(
+                                                    'Are you sure you want to delete this story?',
+                                                );
+                                            "
+                                            style="display: inline"
+                                        >
+                                            <input
+                                                type="hidden"
+                                                name="csrf_token"
+                                                value="{{ csrf_token }}"
+                                            />
+                                            <button
+                                                type="submit"
+                                                class="btn btn-small btn-danger"
+                                                title="Delete"
+                                                style="
+                                                    width: auto;
+                                                    height: auto;
+                                                "
+                                            >
+                                                Delete
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
 
-                {% if not stories %}
-                <div class="empty-state">
-                    <p>No stories match your filters. <a href="/cms/create">Create your first story</a>.</p>
-                </div>
-                {% endif %}
-                
-                {% if pagination.total_pages > 1 %}
-                <nav class="pagination cms-pagination" role="navigation">
-                    {% if pagination.has_previous %}
-                    <a href="?page={{ pagination.current_page - 1 }}&{{ active_filter_query }}" class="page-link prev" aria-label="Previous page">&laquo; Previous</a>
-                    {% endif %}
-                    
-                    {% for p in range(1, pagination.total_pages + 1) %}
-                        {% if p == pagination.current_page %}
+                    {% if not stories %}
+                    <div class="empty-state">
+                        <p>
+                            No stories match your filters.
+                            <a href="/cms/create">Create your first story</a>.
+                        </p>
+                    </div>
+                    {% endif %} {% if pagination.total_pages > 1 %}
+                    <nav class="pagination cms-pagination" role="navigation">
+                        {% if pagination.has_previous %}
+                        <a
+                            href="?page={{ pagination.current_page - 1 }}&{{ active_filter_query }}"
+                            class="page-link prev"
+                            aria-label="Previous page"
+                            >&laquo; Previous</a
+                        >
+                        {% endif %} {% for p in range(1, pagination.total_pages
+                        + 1) %} {% if p == pagination.current_page %}
                         <span class="page-link current">{{ p }}</span>
-                        {% elif p <= 3 or p > pagination.total_pages - 3 or (p >= pagination.current_page - 1 and p <= pagination.current_page + 1) %}
-                        <a href="?page={{ p }}&{{ active_filter_query }}" class="page-link">{{ p }}</a>
+                        {% elif p <= 3 or p > pagination.total_pages - 3 or (p
+                        >= pagination.current_page - 1 and p <=
+                        pagination.current_page + 1) %}
+                        <a
+                            href="?page={{ p }}&{{ active_filter_query }}"
+                            class="page-link"
+                            >{{ p }}</a
+                        >
                         {% elif p == 4 or p == pagination.total_pages - 3 %}
                         <span class="page-link ellipsis">...</span>
+                        {% endif %} {% endfor %} {% if pagination.has_next %}
+                        <a
+                            href="?page={{ pagination.current_page + 1 }}&{{ active_filter_query }}"
+                            class="page-link next"
+                            aria-label="Next page"
+                            >Next &raquo;</a
+                        >
                         {% endif %}
-                    {% endfor %}
-                    
-                    {% if pagination.has_next %}
-                    <a href="?page={{ pagination.current_page + 1 }}&{{ active_filter_query }}" class="page-link next" aria-label="Next page">Next &raquo;</a>
+                    </nav>
                     {% endif %}
-                </nav>
-                {% endif %}
-            </div>
-        </main>
-    </div>
+                </div>
+            </main>
+        </div>
 
-    <script src="/static/js/script.js"></script>
-    <script>
-        // Helper function to remove individual filters
-        function removeFilter(paramName) {
-            const url = new URL(window.location.href);
-            const searchParams = new URLSearchParams(url.search);
-            searchParams.delete(paramName);
-            
-            // If removing a filter, keep other filters
-            const hasOtherFilters = Array.from(searchParams.keys()).some(k => 
-                k === 'q' || k === 'category' || k === 'status' || k === 'month'
-            );
-            
-            if (hasOtherFilters) {
-                window.location.search = searchParams.toString();
-            } else {
-                window.location.href = '/cms/stories';
-            }
-            return false;
-        }
-        
-        // Build URL with current filter parameters
-        function getFilterUrl() {
-            const url = new URL(window.location.href);
-            const searchParams = new URLSearchParams(url.search);
-            return '/cms/stories?' + searchParams.toString();
-        }
-        
-        // Update URL with new parameter value
-        function updateFilterParam(paramName, value) {
-            const url = new URL(window.location.href);
-            const searchParams = new URLSearchParams(url.search);
-            if (value && value !== '') {
-                searchParams.set(paramName, value);
-            } else {
+        <script src="/static/js/script.js"></script>
+        <script>
+            // Helper function to remove individual filters
+            function removeFilter(paramName) {
+                const url = new URL(window.location.href);
+                const searchParams = new URLSearchParams(url.search);
                 searchParams.delete(paramName);
-            }
-            window.location.search = searchParams.toString();
-        }
-        
-        // Auto-update URL on filter changes
-        document.addEventListener('DOMContentLoaded', function() {
-            const filterRow = document.getElementById('filter-row');
-            if (filterRow) {
-                const selects = filterRow.querySelectorAll('select');
-                const searchInput = filterRow.querySelector('input[name="q"]');
-                
-                // Update URL on select change
-                selects.forEach(select => {
-                    select.addEventListener('change', function() {
-                        updateFilterParam(this.name, this.value);
-                    });
-                });
-                
-                // Update URL on search (with debounce to avoid too many requests)
-                if (searchInput) {
-                    let debounceTimer;
-                    searchInput.addEventListener('input', function() {
-                        clearTimeout(debounceTimer);
-                        debounceTimer = setTimeout(() => {
-                            updateFilterParam('q', this.value);
-                        }, 500);
-                    });
-                    
-                    // Handle keyboard events for search input
-                    searchInput.addEventListener('keydown', function(e) {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            updateFilterParam('q', this.value);
-                        }
-                        // Prevent backspace from triggering browser back navigation
-                        if (e.key === 'Backspace') {
-                            e.stopPropagation();
-                            // If there's text, let the input handle it normally
-                            // If empty, prevent default to stop browser back
-                            if (this.value === '') {
-                                e.preventDefault();
-                            }
-                        }
-                    });
+
+                // If removing a filter, keep other filters
+                const hasOtherFilters = Array.from(searchParams.keys()).some(
+                    (k) =>
+                        k === "q" ||
+                        k === "category" ||
+                        k === "status" ||
+                        k === "month",
+                );
+
+                if (hasOtherFilters) {
+                    window.location.search = searchParams.toString();
+                } else {
+                    window.location.href = "/cms/stories";
                 }
+                return false;
             }
-        });
-    </script>
-</body>
+
+            // Build URL with current filter parameters
+            function getFilterUrl() {
+                const url = new URL(window.location.href);
+                const searchParams = new URLSearchParams(url.search);
+                return "/cms/stories?" + searchParams.toString();
+            }
+
+            // Update URL with new parameter value
+            function updateFilterParam(paramName, value) {
+                const url = new URL(window.location.href);
+                const searchParams = new URLSearchParams(url.search);
+                if (value && value !== "") {
+                    searchParams.set(paramName, value);
+                } else {
+                    searchParams.delete(paramName);
+                }
+                window.location.search = searchParams.toString();
+            }
+
+            // Auto-update URL on filter changes
+            document.addEventListener("DOMContentLoaded", function () {
+                const filterRow = document.getElementById("filter-row");
+                if (filterRow) {
+                    const selects = filterRow.querySelectorAll("select");
+                    const searchInput =
+                        filterRow.querySelector('input[name="q"]');
+
+                    // Update URL on select change
+                    selects.forEach((select) => {
+                        select.addEventListener("change", function () {
+                            updateFilterParam(this.name, this.value);
+                        });
+                    });
+
+                    // Update URL on search (with debounce to avoid too many requests)
+                    if (searchInput) {
+                        let debounceTimer;
+                        searchInput.addEventListener("input", function () {
+                            clearTimeout(debounceTimer);
+                            debounceTimer = setTimeout(() => {
+                                updateFilterParam("q", this.value);
+                            }, 500);
+                        });
+
+                        // Handle keyboard events for search input
+                        searchInput.addEventListener("keydown", function (e) {
+                            if (e.key === "Enter") {
+                                e.preventDefault();
+                                updateFilterParam("q", this.value);
+                            }
+                            // Prevent backspace from triggering browser back navigation
+                            if (e.key === "Backspace") {
+                                e.stopPropagation();
+                                // If there's text, let the input handle it normally
+                                // If empty, prevent default to stop browser back
+                                if (this.value === "") {
+                                    e.preventDefault();
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        </script>
+    </body>
 </html>
