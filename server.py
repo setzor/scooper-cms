@@ -19,6 +19,7 @@ import json
 import os
 import re
 import secrets
+import socket
 import sqlite3
 import sys
 import uuid
@@ -33,6 +34,19 @@ from template_engine import get_engine as get_template_engine
 
 # HELPERS
 # ============================================================================
+
+
+def is_loopback(host):
+    """Check if a hostname resolves only to loopback addresses (127.0.0.1 or ::1)."""
+    try:
+        addr_info = socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+        for family, type_, proto, canonname, sockaddr in addr_info:
+            ip = sockaddr[0]
+            if ip not in ("127.0.0.1", "::1"):
+                return False
+        return True if addr_info else False
+    except (socket.gaierror, socket.herror, OSError):
+        return False
 
 
 class MultipartField:
@@ -130,7 +144,7 @@ def save_uploaded_file(field, upload_dir=None):
 
 
 # For production with reverse proxy, change HOST to "0.0.0.0"
-HOST = "localhost"
+HOST = "127.0.0.1"
 PORT = 8000
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "db", "scooper.db")
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
@@ -1637,6 +1651,14 @@ def main():
         print("Added default categories to database.")
     # Ensure General always exists
     ensure_general_category()
+
+    # Validate that HOST binds only to loopback interfaces
+    if not is_loopback(HOST):
+        raise RuntimeError(
+            f"Refusing to bind to non-loopback address: {HOST}. "
+            "For security, HOST must resolve to 127.0.0.1 or ::1. "
+            "If you need external access, use a reverse proxy."
+        )
 
     # Start server
     server_address = (HOST, PORT)
