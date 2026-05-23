@@ -14,25 +14,38 @@ Features:
 """
 
 import base64
+import binascii
 import email
 import json
 import os
 import re
 import secrets
+import socket
 import sqlite3
-import sys
 import uuid
 from datetime import datetime
-from email.message import Message
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
 from urllib.parse import parse_qs, unquote, urlparse
 
-from template_engine import SafeString, TemplateEngine
+from template_engine import SafeString
 from template_engine import get_engine as get_template_engine
 
 # HELPERS
 # ============================================================================
+
+
+def is_loopback(host):
+    """Check if a hostname resolves only to loopback addresses (127.0.0.1 or ::1)."""
+    try:
+        addr_info = socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+        for family, type_, proto, canonname, sockaddr in addr_info:
+            ip = sockaddr[0]
+            if ip not in ("127.0.0.1", "::1"):
+                return False
+        return True if addr_info else False
+    except (socket.gaierror, socket.herror, OSError):
+        return False
 
 
 class MultipartField:
@@ -81,7 +94,13 @@ def parse_multipart_form(rfile, headers, content_length):
             if name:
                 payload = part.get_payload(decode=True)
                 if filename:
-                    file_obj = BytesIO(payload) if payload else BytesIO(b"")
+                    if isinstance(payload, bytes):
+                        file_content = payload
+                    elif isinstance(payload, str):
+                        file_content = payload.encode("utf-8")
+                    else:
+                        file_content = b""
+                    file_obj = BytesIO(file_content)
                     fields.append(MultipartField(name, filename, "", file_obj))
                 else:
                     if isinstance(payload, bytes):
@@ -130,7 +149,7 @@ def save_uploaded_file(field, upload_dir=None):
 
 
 # For production with reverse proxy, change HOST to "0.0.0.0"
-HOST = "localhost"
+HOST = "127.0.0.1"
 PORT = 8000
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "db", "scooper.db")
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
@@ -330,7 +349,7 @@ def get_story_by_id(story_id):
     """Get a single story by ID."""
     try:
         story_id = int(story_id)
-    except:
+    except (ValueError, TypeError):
         return None
     conn = get_db()
     cursor = conn.execute("SELECT * FROM stories WHERE id = ?", (story_id,))
@@ -461,7 +480,7 @@ def format_date(timestamp):
     try:
         dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
         return dt.strftime("%B %d, %Y")
-    except:
+    except (ValueError, TypeError):
         return timestamp
 
 
@@ -522,7 +541,7 @@ def get_category_by_id(category_id):
     """Get a single category by ID."""
     try:
         category_id = int(category_id)
-    except:
+    except (ValueError, TypeError):
         return None
     conn = get_db()
     cursor = conn.execute(
@@ -666,7 +685,7 @@ class ScooperHandler(BaseHTTPRequestHandler):
         encoded_credentials = auth_header[6:]  # Remove 'Basic ' prefix
         try:
             decoded = base64.b64decode(encoded_credentials).decode("utf-8")
-        except (base64.binascii.Error, UnicodeDecodeError):
+        except (binascii.Error, UnicodeDecodeError):
             return False
 
         # Expected format: username:password
@@ -852,7 +871,7 @@ class ScooperHandler(BaseHTTPRequestHandler):
                     self.wfile.write(json.dumps(content).encode("utf-8"))
                 else:
                     self.wfile.write(content.encode("utf-8"))
-            except Exception as e:
+            except Exception:
                 import traceback
 
                 traceback.print_exc()
@@ -902,7 +921,7 @@ class ScooperHandler(BaseHTTPRequestHandler):
                 self.send_header("Content-Length", str(len(content)))
                 self.end_headers()
                 self.wfile.write(content)
-            except Exception as e:
+            except Exception:
                 import traceback
 
                 traceback.print_exc()
@@ -1119,7 +1138,7 @@ def cms_stories_handler(path, params, form_data, handler, csrf_token=None):
                     "selected": m == month_filter,
                 }
             )
-        except:
+        except Exception:
             month_display_names[m] = m
             formatted_months.append(
                 {
@@ -1144,7 +1163,7 @@ def cms_stories_handler(path, params, form_data, handler, csrf_token=None):
 
                 dt = datetime.fromisoformat(raw_published_at.replace("Z", "+00:00"))
                 story_month = dt.strftime("%Y-%m")
-            except:
+            except (ValueError, TypeError):
                 pass
         if not story_month and raw_created_at:
             try:
@@ -1152,7 +1171,7 @@ def cms_stories_handler(path, params, form_data, handler, csrf_token=None):
 
                 dt = datetime.fromisoformat(raw_created_at.replace("Z", "+00:00"))
                 story_month = dt.strftime("%Y-%m")
-            except:
+            except (ValueError, TypeError):
                 pass
 
         # Determine publish status
@@ -1637,6 +1656,14 @@ def main():
         print("Added default categories to database.")
     # Ensure General always exists
     ensure_general_category()
+
+    # Validate that HOST binds only to loopback interfaces
+    if not is_loopback(HOST):
+        raise RuntimeError(
+            f"Refusing to bind to non-loopback address: {HOST}. "
+            "For security, HOST must resolve to 127.0.0.1 or ::1. "
+            "If you need external access, use a reverse proxy."
+        )
 
     # Start server
     server_address = (HOST, PORT)
