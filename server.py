@@ -22,6 +22,7 @@ import re
 import secrets
 import socket
 import sqlite3
+import sys
 import uuid
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -157,8 +158,8 @@ TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templa
 UPLOADS_DIR = os.path.join(STATIC_DIR, "uploads")
 
 # Authentication configuration for CMS access
-CMS_USERNAME = os.getenv("SCOOPER_ADMIN_USER", "admin")
-CMS_PASSWORD = os.getenv("SCOOPER_ADMIN_PASS", "admin")
+CMS_USERNAME = os.getenv("SCOOPER_ADMIN_USER")
+CMS_PASSWORD = os.getenv("SCOOPER_ADMIN_PASS")
 
 # CSRF configuration
 CSRF_COOKIE_NAME = "csrf_token"
@@ -1589,6 +1590,17 @@ ScooperHandler.add_route("POST", "/api/toggle-theme", toggle_theme_handler)
 
 def main():
     """Main entry point."""
+    # Validate required authentication environment variables
+    if not CMS_USERNAME or not CMS_PASSWORD:
+        sys.exit(
+            "ERROR: SCOOPER_ADMIN_USER and SCOOPER_ADMIN_PASS environment variables must be set.\n"
+            "These credentials are required for CMS access.\n"
+            "Please configure them before starting the server.\n"
+            "Example:\n"
+            "  export SCOOPER_ADMIN_USER=your_admin_username\n"
+            "  export SCOOPER_ADMIN_PASS=your_secure_password\n"
+        )
+
     # Initialize database
     init_db()
 

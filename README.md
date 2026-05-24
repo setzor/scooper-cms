@@ -84,6 +84,32 @@ HOST = "localhost"  # Change to "0.0.0.0" for external access
 PORT = 8000        # Change to any available port
 ```
 
+### Authentication Credentials
+
+**Required**: You must set environment variables for CMS authentication. The server will fail to start without them.
+
+```bash
+# Linux/macOS
+export SCOOPER_ADMIN_USER=your_username
+export SCOOPER_ADMIN_PASS=your_secure_password
+python3 server.py
+
+# Or as a one-liner:
+SCOOPER_ADMIN_USER=your_username SCOOPER_ADMIN_PASS=your_secure_password python3 server.py
+
+# Windows (Command Prompt)
+set SCOOPER_ADMIN_USER=your_username
+set SCOOPER_ADMIN_PASS=your_secure_password
+python server.py
+
+# Windows (PowerShell)
+$env:SCOOPER_ADMIN_USER="your_username"
+$env:SCOOPER_ADMIN_PASS="your_secure_password"
+python server.py
+```
+
+> **⚠️ Security Note**: Never use default credentials like "admin/admin". Always set strong, unique credentials via these environment variables.
+
 ## Adding Custom Categories
 
 Edit the categories list in the CMS create/edit handlers in `server.py`:
