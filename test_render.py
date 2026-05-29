@@ -52,7 +52,7 @@ context = {
         'id': 1,
         'title': 'Breaking News: Scooper Launches!',
         'slug': 'breaking-news-scooper-launches',
-        'excerpt': SafeString('Scooper CMS has officially launched...'),
+        'excerpt': 'Scooper CMS has officially launched...',
         'author': 'Scooper Team',
         'category': 'Announcement',
         'published_at': datetime.now().strftime('%B %d, %Y')
