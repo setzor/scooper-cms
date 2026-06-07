@@ -32,6 +32,8 @@ from urllib.parse import parse_qs, unquote, urlparse
 from template_engine import SafeString
 from template_engine import get_engine as get_template_engine
 
+from backup_utils import backup_database, create_backup_with_timestamp, get_latest_backup, restore_database
+
 # HELPERS
 # ============================================================================
 
@@ -156,6 +158,7 @@ DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "db", "scoope
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 UPLOADS_DIR = os.path.join(STATIC_DIR, "uploads")
+BACKUP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "backups")
 
 # Authentication configuration for CMS access
 CMS_USERNAME = os.getenv("SCOOPER_ADMIN_USER")
@@ -169,6 +172,7 @@ CSRF_TOKEN_LENGTH = 32
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 os.makedirs(STATIC_DIR, exist_ok=True)
 os.makedirs(UPLOADS_DIR, exist_ok=True)
+os.makedirs(BACKUP_DIR, exist_ok=True)
 
 # ============================================================================
 # CSRF PROTECTION
@@ -1583,6 +1587,68 @@ ScooperHandler.add_route("POST", "/cms/settings/", cms_settings_handler)
 ScooperHandler.add_route("POST", "/api/toggle-theme", toggle_theme_handler)
 
 
+def cms_backup_handler(path, params, form_data, handler):
+    """Handle database backup requests from CMS."""
+    if handler.command == "GET":
+        # List existing backups
+        import os
+        backup_files = []
+        if os.path.exists(BACKUP_DIR):
+            for filename in sorted(os.listdir(BACKUP_DIR), reverse=True):
+                if filename.startswith("scooper_backup_") and filename.endswith(".db"):
+                    filepath = os.path.join(BACKUP_DIR, filename)
+                    stat = os.stat(filepath)
+                    backup_files.append({
+                        "name": filename,
+                        "path": filepath,
+                        "size": stat.st_size,
+                        "created": datetime.fromtimestamp(stat.st_mtime).isoformat()
+                    })
+        
+        latest = get_latest_backup()
+        template = handler.template_engine.get_template("cms/backup.html")
+        return template.render(
+            backups=backup_files,
+            latest_backup=latest,
+            csrf_token=params.get("csrf_token", "")
+        ), 200
+    
+    elif handler.command == "POST":
+        # Create a new backup or restore
+        action = form_data.get("action", "")
+        
+        if action == "create":
+            backup_path = create_backup_with_timestamp()
+            if backup_path:
+                return json.dumps({"success": True, "path": backup_path}), 200
+            else:
+                return json.dumps({"success": False, "error": "Backup failed"}), 500
+        
+        elif action == "restore":
+            backup_path = form_data.get("backup_path", "")
+            if not backup_path:
+                # Try to use latest
+                backup_path = get_latest_backup()
+            
+            if backup_path and os.path.exists(backup_path):
+                success = restore_database(backup_path)
+                if success:
+                    return json.dumps({"success": True, "message": "Database restored"}), 200
+                else:
+                    return json.dumps({"success": False, "error": "Restore failed"}), 500
+            else:
+                return json.dumps({"success": False, "error": "Backup not found"}), 404
+        
+        return json.dumps({"success": False, "error": "Invalid action"}), 400
+
+
+# Register backup routes
+ScooperHandler.add_route("GET", "/cms/backup", cms_backup_handler)
+ScooperHandler.add_route("GET", "/cms/backup/", cms_backup_handler)
+ScooperHandler.add_route("POST", "/cms/backup", cms_backup_handler)
+ScooperHandler.add_route("POST", "/cms/backup/", cms_backup_handler)
+
+
 # ============================================================================
 # MAIN
 # ============================================================================
@@ -1698,3 +1764,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
