@@ -126,6 +126,57 @@ The database includes:
 - `stories` table: All news articles
 - `settings` table: Site configuration
 
+## Backups
+
+**Important**: Regular backups are essential for data protection. Scooper provides comprehensive backup solutions for both database and media assets.
+
+### Local Backups
+
+Create manual backups:
+```bash
+# Database backup
+python3 scripts/backup_db.py backup
+
+# Media assets backup (uploads directory)
+python3 scripts/backup_media.py backup
+
+# Full backup (database + media)
+python3 scripts/backup_all.py
+```
+
+Backups are stored in the `backups/` directory:
+- Database: `backups/scooper_backup_YYYYMMDD_HHMMSS.db`
+- Media: `backups/media_backup_YYYYMMDD_HHMMSS.tar.gz`
+
+### Automated Backups with Cron
+
+Set up automatic backups by adding to crontab:
+```bash
+# Edit crontab
+crontab -e
+
+# Add daily backup at 2:00 AM
+0 2 * * * /usr/bin/python3 /path/to/scooper/scripts/backup_all.py >> /var/log/scooper_backup.log 2>&1
+```
+
+### Remote Backups (Recommended)
+
+For offsite backups, configure rclone:
+```bash
+# Install rclone
+sudo apt install rclone
+
+# Configure remote storage
+rclone config
+
+# Enable remote backup in Scooper
+python3 scripts/backup_media.py config-set remote_enabled true
+python3 scripts/backup_media.py config-set rclone_remote myremote
+python3 scripts/backup_media.py config-set rclone_path scooper_backups
+```
+
+See [BACKUP_SETUP.md](BACKUP_SETUP.md) for complete backup documentation.
+
 ## Production Deployment (Recommended)
 
 **⚠️ WARNING: Do NOT use `http.server` (Python's built-in server) in production!**
