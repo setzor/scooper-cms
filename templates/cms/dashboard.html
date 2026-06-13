@@ -4,13 +4,108 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{{ page_title }} - {{ site_title }}</title>
-        <link rel="stylesheet" href="/static/css/style.css" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+        <!-- Performance: Preload key fonts -->
         <link
+            rel="preload"
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-            rel="stylesheet"
+            as="style"
+            onload="this.rel = 'stylesheet'"
         />
+        <link
+            rel="preload"
+            href="https://fonts.googleapis.com"
+            as="font"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="https://fonts.gstatic.com"
+            as="font"
+            crossorigin
+        />
+        <noscript>
+            <link
+                href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+                rel="stylesheet"
+            />
+        </noscript>
+
+        <!-- Performance: Critical CSS inlined -->
+        <style>
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            html {
+                scroll-behavior: smooth;
+            }
+            body {
+                font-family: var(--font-body);
+                line-height: 1.6;
+                color: var(--paper-text);
+                background-color: var(--paper-bg);
+                transition:
+                    background-color 0.3s ease,
+                    color 0.3s ease;
+            }
+            a {
+                color: var(--paper-link-color);
+                text-decoration: none;
+                transition: color 0.2s ease;
+            }
+            a:hover {
+                color: var(--paper-link-hover);
+                text-decoration: underline;
+            }
+            img {
+                max-width: 100%;
+                height: auto;
+                aspect-ratio: attr(width) / attr(height);
+            }
+            img[src=""] {
+                display: none;
+            }
+            .paper-header,
+            .paper-nav,
+            .story-card,
+            .story-image,
+            .featured-image-container,
+            .cms-header,
+            .cms-sidebar,
+            .cms-nav {
+                contain: layout paint;
+            }
+            .story-card {
+                contain: layout paint;
+                min-height: 400px;
+            }
+            .story-image img,
+            .featured-image {
+                aspect-ratio: 16/9;
+                object-fit: cover;
+            }
+            .featured-image-container {
+                min-height: 300px;
+            }
+            .paper-header {
+                min-height: 80px;
+            }
+        </style>
+
+        <!-- Performance: Load non-critical CSS asynchronously -->
+        <link
+            rel="preload"
+            href="/static/css/style.css"
+            as="style"
+            onload="this.rel = 'stylesheet'"
+        />
+        <noscript>
+            <link rel="stylesheet" href="/static/css/style.css" />
+        </noscript>
     </head>
     <body class="theme-{{ theme }} cms-theme">
         <div class="cms-layout">
