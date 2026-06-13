@@ -472,14 +472,7 @@
 /* ==========================================================================
    Reset & Base Styles
    ========================================================================== */
-==========================================================================
-    Reset
-    &
-    Base
-    Styles
-    ==========================================================================
-    */
-    *,
+*,
 *::before,
 *::after {
     box-sizing: border-box;
@@ -515,11 +508,37 @@ a:hover {
 img {
     max-width: 100%;
     height: auto;
+    /* Performance: Prevent layout shifts for images */
+    aspect-ratio: attr(width) / attr(height);
 }
 
 /* Hide broken images with empty src */
 img[src=""] {
     display: none;
+}
+
+/* Performance: Critical CSS containment for layout-heavy components */
+.paper-header,
+.paper-nav,
+.story-card,
+.story-image,
+.featured-image-container,
+.cms-header,
+.cms-sidebar,
+.cms-nav {
+    contain: layout paint;
+}
+
+/* Strict containment for independent components */
+.story-card {
+    contain: strict;
+}
+
+/* Ensure images maintain their aspect ratio */
+.story-image img,
+.featured-image {
+    aspect-ratio: 16/9;
+    object-fit: cover;
 }
 
 .story-image img {
@@ -544,6 +563,9 @@ img[src=""] {
     position: sticky;
     top: 0;
     z-index: 100;
+    /* Performance: Prevent layout shifts in header */
+    height: auto;
+    min-height: 80px;
 }
 
 .header-container {
@@ -661,6 +683,8 @@ img[src=""] {
     border-radius: 8px;
     padding: 1.5rem;
     transition: all 0.3s ease;
+    /* Performance: Min-height prevents layout shift */
+    min-height: 400px;
 }
 
 .story-card:hover {
@@ -688,6 +712,8 @@ img[src=""] {
 .featured-image-container {
     margin: 1.5rem 0;
     text-align: center;
+    /* Performance: Reserve space for LCP image */
+    min-height: 300px;
 }
 
 .featured-image {

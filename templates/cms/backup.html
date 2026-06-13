@@ -4,13 +4,108 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Database Backup - {{ site_title }}</title>
-        <link rel="stylesheet" href="/static/css/style.css" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+        <!-- Performance: Preload key fonts -->
         <link
+            rel="preload"
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-            rel="stylesheet"
+            as="style"
+            onload="this.rel = 'stylesheet'"
         />
+        <link
+            rel="preload"
+            href="https://fonts.googleapis.com"
+            as="font"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="https://fonts.gstatic.com"
+            as="font"
+            crossorigin
+        />
+        <noscript>
+            <link
+                href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+                rel="stylesheet"
+            />
+        </noscript>
+
+        <!-- Performance: Critical CSS inlined -->
+        <style>
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            html {
+                scroll-behavior: smooth;
+            }
+            body {
+                font-family: var(--font-body);
+                line-height: 1.6;
+                color: var(--paper-text);
+                background-color: var(--paper-bg);
+                transition:
+                    background-color 0.3s ease,
+                    color 0.3s ease;
+            }
+            a {
+                color: var(--paper-link-color);
+                text-decoration: none;
+                transition: color 0.2s ease;
+            }
+            a:hover {
+                color: var(--paper-link-hover);
+                text-decoration: underline;
+            }
+            img {
+                max-width: 100%;
+                height: auto;
+                aspect-ratio: attr(width) / attr(height);
+            }
+            img[src=""] {
+                display: none;
+            }
+            .paper-header,
+            .paper-nav,
+            .story-card,
+            .story-image,
+            .featured-image-container,
+            .cms-header,
+            .cms-sidebar,
+            .cms-nav {
+                contain: layout paint;
+            }
+            .story-card {
+                contain: layout paint;
+                min-height: 400px;
+            }
+            .story-image img,
+            .featured-image {
+                aspect-ratio: 16/9;
+                object-fit: cover;
+            }
+            .featured-image-container {
+                min-height: 300px;
+            }
+            .paper-header {
+                min-height: 80px;
+            }
+        </style>
+
+        <!-- Performance: Load non-critical CSS asynchronously -->
+        <link
+            rel="preload"
+            href="/static/css/style.css"
+            as="style"
+            onload="this.rel = 'stylesheet'"
+        />
+        <noscript>
+            <link rel="stylesheet" href="/static/css/style.css" />
+        </noscript>
     </head>
     <body class="theme-{{ theme }} cms-theme">
         <div class="cms-layout">
@@ -91,8 +186,12 @@
                                 <div class="backup-status">
                                     <span class="status-icon">&#10003;</span>
                                     <div class="status-info">
-                                        <p class="status-label">Latest Backup</p>
-                                        <p class="status-value">{{ latest_backup|basename }}</p>
+                                        <p class="status-label">
+                                            Latest Backup
+                                        </p>
+                                        <p class="status-value">
+                                            {{ latest_backup|basename }}
+                                        </p>
                                     </div>
                                 </div>
                                 {% else %}
@@ -100,7 +199,9 @@
                                     <span class="status-icon">&#9888;</span>
                                     <div class="status-info">
                                         <p class="status-label">No Backups</p>
-                                        <p class="status-value">No database backups found</p>
+                                        <p class="status-value">
+                                            No database backups found
+                                        </p>
                                     </div>
                                 </div>
                                 {% endif %}
@@ -114,16 +215,28 @@
                             </div>
                             <div class="card-body">
                                 <div class="action-buttons">
-                                    <button id="createBackupBtn" class="btn btn-primary" onclick="createBackup()">
+                                    <button
+                                        id="createBackupBtn"
+                                        class="btn btn-primary"
+                                        onclick="createBackup()"
+                                    >
                                         <span>&#128190;</span> Create Backup Now
                                     </button>
                                     {% if latest_backup %}
-                                    <button id="restoreBackupBtn" class="btn btn-secondary" onclick="restoreBackup()">
+                                    <button
+                                        id="restoreBackupBtn"
+                                        class="btn btn-secondary"
+                                        onclick="restoreBackup()"
+                                    >
                                         <span>&#8635;</span> Restore Latest
                                     </button>
                                     {% endif %}
                                 </div>
-                                <div id="backupMessage" class="message" style="display: none;"></div>
+                                <div
+                                    id="backupMessage"
+                                    class="message"
+                                    style="display: none"
+                                ></div>
                             </div>
                         </div>
 
@@ -147,10 +260,17 @@
                                         {% for backup in backups %}
                                         <tr>
                                             <td>{{ backup.name }}</td>
-                                            <td>{{ "%.2f"|format(backup.size / 1024 / 1024) }} MB</td>
+                                            <td>
+                                                {{ "%.2f"|format(backup.size /
+                                                1024 / 1024) }} MB
+                                            </td>
                                             <td>{{ backup.created[:19] }}</td>
                                             <td>
-                                                <button class="btn-icon" onclick="restoreSpecificBackup('{{ backup.path }}')" title="Restore">
+                                                <button
+                                                    class="btn-icon"
+                                                    onclick="restoreSpecificBackup('{{ backup.path }}')"
+                                                    title="Restore"
+                                                >
                                                     &#8635;
                                                 </button>
                                             </td>
@@ -169,13 +289,17 @@
                             </div>
                             <div class="card-body">
                                 <p>
-                                    <strong>Safe Backups:</strong> This system uses SQLite's online backup API,
-                                    which safely copies the database while it's in use, preventing corruption.
+                                    <strong>Safe Backups:</strong> This system
+                                    uses SQLite's online backup API, which
+                                    safely copies the database while it's in
+                                    use, preventing corruption.
                                 </p>
                                 <p>
-                                    Backups are stored in the <code>backups/</code> directory and are excluded from
-                                    version control. For production use, consider implementing offsite backups
-                                    to remote storage.
+                                    Backups are stored in the
+                                    <code>backups/</code> directory and are
+                                    excluded from version control. For
+                                    production use, consider implementing
+                                    offsite backups to remote storage.
                                 </p>
                             </div>
                         </div>
@@ -184,112 +308,130 @@
             </main>
         </div>
 
-        <script src="/static/js/script.js"></script>
+        <!-- Performance: Load JavaScript with defer -->
+        <script src="/static/js/script.js" defer></script>
         <script>
             function createBackup() {
-                const btn = document.getElementById('createBackupBtn');
-                const msg = document.getElementById('backupMessage');
+                const btn = document.getElementById("createBackupBtn");
+                const msg = document.getElementById("backupMessage");
                 btn.disabled = true;
-                btn.textContent = 'Creating...';
-                
-                fetch('/cms/backup', {
-                    method: 'POST',
+                btn.textContent = "Creating...";
+
+                fetch("/cms/backup", {
+                    method: "POST",
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
+                        "Content-Type": "application/x-www-form-urlencoded",
                     },
-                    body: 'action=create&csrf_token={{ csrf_token }}'
+                    body: "action=create&csrf_token={{ csrf_token }}",
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        msg.textContent = 'Backup created successfully: ' + data.path;
-                        msg.style.display = 'block';
-                        msg.className = 'message success';
-                        // Refresh page after a delay
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        msg.textContent = 'Error: ' + (data.error || 'Backup failed');
-                        msg.style.display = 'block';
-                        msg.className = 'message error';
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.success) {
+                            msg.textContent =
+                                "Backup created successfully: " + data.path;
+                            msg.style.display = "block";
+                            msg.className = "message success";
+                            // Refresh page after a delay
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            msg.textContent =
+                                "Error: " + (data.error || "Backup failed");
+                            msg.style.display = "block";
+                            msg.className = "message error";
+                            btn.disabled = false;
+                            btn.textContent = "&#128190; Create Backup Now";
+                        }
+                    })
+                    .catch((error) => {
+                        msg.textContent = "Error: " + error.message;
+                        msg.style.display = "block";
+                        msg.className = "message error";
                         btn.disabled = false;
-                        btn.textContent = '&#128190; Create Backup Now';
-                    }
-                })
-                .catch(error => {
-                    msg.textContent = 'Error: ' + error.message;
-                    msg.style.display = 'block';
-                    msg.className = 'message error';
-                    btn.disabled = false;
-                    btn.textContent = '&#128190; Create Backup Now';
-                });
+                        btn.textContent = "&#128190; Create Backup Now";
+                    });
             }
 
             function restoreBackup() {
-                if (!confirm('Are you sure you want to restore the latest backup? This will overwrite your current database!')) {
+                if (
+                    !confirm(
+                        "Are you sure you want to restore the latest backup? This will overwrite your current database!",
+                    )
+                ) {
                     return;
                 }
-                
-                const msg = document.getElementById('backupMessage');
-                msg.textContent = 'Restoring...';
-                msg.style.display = 'block';
-                msg.className = 'message';
-                
-                fetch('/cms/backup', {
-                    method: 'POST',
+
+                const msg = document.getElementById("backupMessage");
+                msg.textContent = "Restoring...";
+                msg.style.display = "block";
+                msg.className = "message";
+
+                fetch("/cms/backup", {
+                    method: "POST",
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
+                        "Content-Type": "application/x-www-form-urlencoded",
                     },
-                    body: 'action=restore&csrf_token={{ csrf_token }}'
+                    body: "action=restore&csrf_token={{ csrf_token }}",
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        msg.textContent = 'Database restored successfully! Page will reload.';
-                        msg.className = 'message success';
-                        setTimeout(() => location.reload(), 2000);
-                    } else {
-                        msg.textContent = 'Error: ' + (data.error || 'Restore failed');
-                        msg.className = 'message error';
-                    }
-                })
-                .catch(error => {
-                    msg.textContent = 'Error: ' + error.message;
-                    msg.className = 'message error';
-                });
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.success) {
+                            msg.textContent =
+                                "Database restored successfully! Page will reload.";
+                            msg.className = "message success";
+                            setTimeout(() => location.reload(), 2000);
+                        } else {
+                            msg.textContent =
+                                "Error: " + (data.error || "Restore failed");
+                            msg.className = "message error";
+                        }
+                    })
+                    .catch((error) => {
+                        msg.textContent = "Error: " + error.message;
+                        msg.className = "message error";
+                    });
             }
 
             function restoreSpecificBackup(backupPath) {
-                if (!confirm('Are you sure you want to restore this backup? This will overwrite your current database!')) {
+                if (
+                    !confirm(
+                        "Are you sure you want to restore this backup? This will overwrite your current database!",
+                    )
+                ) {
                     return;
                 }
-                
-                const msg = document.getElementById('backupMessage');
-                msg.textContent = 'Restoring...';
-                msg.style.display = 'block';
-                msg.className = 'message';
-                
-                fetch('/cms/backup', {
-                    method: 'POST',
+
+                const msg = document.getElementById("backupMessage");
+                msg.textContent = "Restoring...";
+                msg.style.display = "block";
+                msg.className = "message";
+
+                fetch("/cms/backup", {
+                    method: "POST",
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
+                        "Content-Type": "application/x-www-form-urlencoded",
                     },
-                    body: 'action=restore&backup_path=' + encodeURIComponent(backupPath) + '&csrf_token={{ csrf_token }}'
+                    body:
+                        "action=restore&backup_path=" +
+                        encodeURIComponent(backupPath) +
+                        "&csrf_token={{ csrf_token }}",
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        msg.textContent = 'Database restored successfully! Page will reload.';
-                        msg.className = 'message success';
-                        setTimeout(() => location.reload(), 2000);
-                    } else {
-                        msg.textContent = 'Error: ' + (data.error || 'Restore failed');
-                        msg.className = 'message error';
-                    }
-                })
-                .catch(error => {
-                    msg.textContent = 'Error: ' + error.message;
-                    msg.className = 'message error';
-                });
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.success) {
+                            msg.textContent =
+                                "Database restored successfully! Page will reload.";
+                            msg.className = "message success";
+                            setTimeout(() => location.reload(), 2000);
+                        } else {
+                            msg.textContent =
+                                "Error: " + (data.error || "Restore failed");
+                            msg.className = "message error";
+                        }
+                    })
+                    .catch((error) => {
+                        msg.textContent = "Error: " + error.message;
+                        msg.className = "message error";
+                    });
             }
         </script>
     </body>

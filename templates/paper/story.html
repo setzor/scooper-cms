@@ -6,13 +6,108 @@
         <!-- This template is rendered by server.py - all {{ variables }} are replaced with actual values -->
         <title>{{ story.title }} - {{ site_title }}</title>
         <meta name="description" content="{{ story.excerpt }}" />
-        <link rel="stylesheet" href="/static/css/style.css" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+        <!-- Performance: Preload key fonts -->
         <link
+            rel="preload"
             href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lora:wght@400;600&family=Source+Serif+Pro:wght@400;600&display=swap"
-            rel="stylesheet"
+            as="style"
+            onload="this.rel = 'stylesheet'"
         />
+        <link
+            rel="preload"
+            href="https://fonts.googleapis.com"
+            as="font"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="https://fonts.gstatic.com"
+            as="font"
+            crossorigin
+        />
+        <noscript>
+            <link
+                href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lora:wght@400;600&family=Source+Serif+Pro:wght@400;600&display=swap"
+                rel="stylesheet"
+            />
+        </noscript>
+
+        <!-- Performance: Critical CSS inlined -->
+        <style>
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            html {
+                scroll-behavior: smooth;
+            }
+            body {
+                font-family: var(--font-body);
+                line-height: 1.6;
+                color: var(--paper-text);
+                background-color: var(--paper-bg);
+                transition:
+                    background-color 0.3s ease,
+                    color 0.3s ease;
+            }
+            a {
+                color: var(--paper-link-color);
+                text-decoration: none;
+                transition: color 0.2s ease;
+            }
+            a:hover {
+                color: var(--paper-link-hover);
+                text-decoration: underline;
+            }
+            img {
+                max-width: 100%;
+                height: auto;
+                aspect-ratio: attr(width) / attr(height);
+            }
+            img[src=""] {
+                display: none;
+            }
+            .paper-header,
+            .paper-nav,
+            .story-card,
+            .story-image,
+            .featured-image-container,
+            .cms-header,
+            .cms-sidebar,
+            .cms-nav {
+                contain: layout paint;
+            }
+            .story-card {
+                contain: layout paint;
+                min-height: 400px;
+            }
+            .story-image img,
+            .featured-image {
+                aspect-ratio: 16/9;
+                object-fit: cover;
+            }
+            .featured-image-container {
+                min-height: 300px;
+            }
+            .paper-header {
+                min-height: 80px;
+            }
+        </style>
+
+        <!-- Performance: Load non-critical CSS asynchronously -->
+        <link
+            rel="preload"
+            href="/static/css/style.css"
+            as="style"
+            onload="this.rel = 'stylesheet'"
+        />
+        <noscript>
+            <link rel="stylesheet" href="/static/css/style.css" />
+        </noscript>
     </head>
     <body class="theme-{{ theme }}">
         <div class="paper-layout">
@@ -63,6 +158,10 @@
                                 src="{{ story.featured_image }}"
                                 alt="{{ story.title }}"
                                 class="featured-image"
+                                width="800"
+                                height="450"
+                                loading="eager"
+                                priority="true"
                             />
                         </div>
                         {% endif %}
@@ -104,7 +203,8 @@
             </footer>
         </div>
 
-        <script src="/static/js/script.js"></script>
+        <!-- Performance: Load JavaScript with defer -->
+        <script src="/static/js/script.js" defer></script>
         <script>
             // Hide empty images on story page
             document.addEventListener("DOMContentLoaded", function () {
