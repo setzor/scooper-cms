@@ -108,6 +108,45 @@
         </noscript>
     </head>
     <body class="theme-{{ theme }} cms-theme">
+        <!-- Mobile Sidebar Overlay -->
+        <div class="cms-sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
+        <!-- Mobile Bottom Navigation -->
+        <nav class="cms-bottom-nav">
+            <ul class="cms-nav">
+                <li>
+                    <a href="/cms/dashboard" class="nav-item">
+                        <span class="nav-icon">&#128196;</span>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/cms/stories" class="nav-item active">
+                        <span class="nav-icon">&#128218;</span>
+                        <span>Stories</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/cms/create" class="nav-item">
+                        <span class="nav-icon">&#9998;</span>
+                        <span>New</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/cms/settings" class="nav-item">
+                        <span class="nav-icon">&#9881;</span>
+                        <span>Settings</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/" class="nav-item view-paper-btn" target="_blank">
+                        <span class="nav-icon">&#128065;</span>
+                        <span>View</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
         <div class="cms-layout">
             <!-- Sidebar -->
             <nav class="cms-sidebar">
@@ -155,6 +194,13 @@
             <main class="cms-main">
                 <header class="cms-header">
                     <div class="header-left">
+                        <button
+                            class="menu-toggle"
+                            onclick="toggleMobileSidebar()"
+                            title="Toggle sidebar"
+                        >
+                            &#9776;
+                        </button>
                         <h1>{{ page_title }}</h1>
                     </div>
                     <div class="header-right">

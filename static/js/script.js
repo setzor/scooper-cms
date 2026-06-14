@@ -105,6 +105,29 @@ document.addEventListener('DOMContentLoaded', function() {
         // Trigger once to set initial height
         textarea.dispatchEvent(new Event('input'));
     });
+    
+    // Also highlight active nav item in bottom mobile navigation
+    const bottomNavItems = document.querySelectorAll('.cms-bottom-nav .nav-item');
+    bottomNavItems.forEach(function(item) {
+        const href = item.getAttribute('href');
+        // Simple path matching
+        if (currentPath === href || currentPath === href + '/') {
+            item.classList.add('active');
+        }
+    });
+
+    // Setup mobile sidebar overlay
+    const overlay = document.querySelector('.cms-sidebar-overlay');
+    if (overlay) {
+        overlay.addEventListener('click', closeMobileSidebar);
+    }
+    
+    // Close sidebar when window is resized to desktop size
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) {
+            closeMobileSidebar();
+        }
+    });
 });
 
 // Confirm before leaving unsaved changes
@@ -157,4 +180,29 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             }
         }
     }
+    
+    // Escape key to close mobile sidebar
+    if (e.key === 'Escape') {
+        closeMobileSidebar();
+    }
 });
+
+
+// Mobile Sidebar Toggle
+function toggleMobileSidebar() {
+    const sidebar = document.querySelector('.cms-sidebar');
+    const overlay = document.querySelector('.cms-sidebar-overlay');
+    if (sidebar && overlay) {
+        sidebar.classList.toggle('mobile-open');
+        overlay.classList.toggle('active');
+    }
+}
+
+function closeMobileSidebar() {
+    const sidebar = document.querySelector('.cms-sidebar');
+    const overlay = document.querySelector('.cms-sidebar-overlay');
+    if (sidebar && overlay) {
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('active');
+    }
+}
