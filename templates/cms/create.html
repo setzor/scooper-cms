@@ -343,100 +343,70 @@
         <!-- Performance: Load JavaScript with defer -->
         <script src="/static/js/script.js" defer></script>
         <script>
-// Inline markdown editor - minimal version
-function initMarkdownEditor() {
-    const editor = document.getElementById('markdown-editor');
-    const preview = document.getElementById('markdown-preview');
-    const content = document.getElementById('content');
-    
+// Markdown Editor
+(function() {
+    var editor = document.getElementById('markdown-editor');
+    var preview = document.getElementById('markdown-preview');
+    var content = document.getElementById('content');
     if (!editor || !preview) {
-        console.error('MarkdownEditor: Could not find elements');
-        console.error('Editor:', editor);
-        console.error('Preview:', preview);
+        console.error('MD Editor: elements not found');
         return;
     }
-    
-    // Create toolbar
-    const toolbar = document.createElement('div');
-    toolbar.className = 'markdown-toolbar';
-    toolbar.style.marginBottom = '10px';
-    toolbar.style.display = 'flex';
-    toolbar.style.gap = '5px';
-    toolbar.style.flexWrap = 'wrap';
-    
-    const buttons = [
-        { label: 'B', title: 'Bold', cmd: () => wrapSelection(editor, '**', '**') },
-        { label: 'I', title: 'Italic', cmd: () => wrapSelection(editor, '*', '*') },
-        { label: 'H1', title: 'Heading 1', cmd: () => wrapSelection(editor, '# ', '') },
-        { label: 'H2', title: 'Heading 2', cmd: () => wrapSelection(editor, '## ', '') },
-        { label: '"', title: 'Quote', cmd: () => wrapSelection(editor, '> ', '') },
-    ];
-    
-    buttons.forEach(btn => {
-        const b = document.createElement('button');
-        b.textContent = btn.label;
-        b.title = btn.title;
-        b.onclick = btn.cmd;
-        b.style.padding = '5px 10px';
-        b.style.border = '1px solid #ccc';
-        b.style.borderRadius = '3px';
-        b.style.cursor = 'pointer';
-        toolbar.appendChild(b);
+    var toolbar = document.createElement('div');
+    toolbar.style.cssText = 'margin-bottom:10px;display:flex;gap:5px;flex-wrap:wrap';
+    ['B','I','H1','H2','H3','Link','Image','UL','OL','HR'].forEach(function(label) {
+        var btn = document.createElement('button');
+        btn.textContent = label;
+        btn.title = label + ' formatting';
+        btn.style.cssText = 'padding:5px 10px;border:1px solid #ccc;border-radius:3px;cursor:pointer';
+        btn.onclick = function() {
+            var text = editor.value;
+            var start = editor.selectionStart;
+            var end = editor.selectionEnd;
+            var sel = text.substring(start, end);
+            var before = text.substring(0, start);
+            var after = text.substring(end);
+            var wrap = {'B':'**','I':'*','H1':'# ','H2':'## ','H3':'### ','Link':'[](url)','Image':'![](url)','UL':'- ','OL':'1. ','HR':'---'}[label];
+            if (wrap) {
+                editor.value = before + wrap + sel + (label === 'HR' ? '' : wrap.split(' ')[0]);
+                editor.selectionStart = start + wrap.length;
+                editor.selectionEnd = start + wrap.length + sel.length;
+                editor.focus();
+            }
+        };
+        toolbar.appendChild(btn);
     });
-    
     editor.parentNode.insertBefore(toolbar, editor);
-    
-    // Set preview to be visible
-    preview.style.display = 'block';
-    preview.style.padding = '10px';
-    preview.style.border = '1px solid #ddd';
-    preview.style.marginTop = '10px';
-    preview.style.minHeight = '200px';
-    preview.textContent = 'Preview will appear here as you type...';
-    
-    // Update preview on input
+    preview.style.cssText = 'display:block;padding:10px;border:1px solid #ddd;margin-top:10px;min-height:200px';
+    preview.textContent = 'Preview appears here as you type...';
+    if (content && content.value) editor.value = content.value;
+    var updatePreview = function() {
+        var text = editor.value;
+        if (content) content.value = text;
+        if (!text.trim()) {
+            preview.innerHTML = '<p style="color:#888">Preview appears here as you type...</p>';
+            return;
+        }
+        var html = text.replace(/
+
+/g, '<p></p>')
+            .replace(/^#+\s+(.*)$/gm, function(m, p1) { return '<h' + (m.match(/^#+/).toString().length) + '>' + p1 + '</h' + (m.match(/^#+/).toString().length) + '>'; })
+            .replace(/^>\s+(.*)$/gm, '<blockquote>$1</blockquote>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/`([^`
+]+)`/g, '<code>$1</code>');
+        preview.innerHTML = '<p>' + html.replace(/
+/g, '<br>') + '</p>';
+    };
+    var timeout;
     editor.addEventListener('input', function() {
-        // Simple markdown preview (no library needed)
-        let text = editor.value;
-        
-        // Basic markdown to HTML
-        text = text.replace(/^#\s+(.*)$/gm, '<h1>$1</h1>');
-        text = text.replace(/^##\s+(.*)$/gm, '<h2>$1</h2>');
-        text = text.replace(/^###\s+(.*)$/gm, '<h3>$1</h3>');
-        text = text.replace(/^>\s+(.*)$/gm, '<blockquote>$1</blockquote>');
-        text = text.replace(/\*\*(.*)\*\*/g, '<strong>$1</strong>');
-        text = text.replace(/\*(.*)\*/g, '<em>$1</em>');
-        text = text.replace(/`(.*)`/g, '<code>$1</code>');
-        text = text.replace(/\n\n/g, '<p></p>');
-        
-        preview.innerHTML = text || '<p>Preview will appear here as you type...</p>';
-        
-        // Update hidden content field
-        if (content) content.value = editor.value;
+        clearTimeout(timeout);
+        timeout = setTimeout(updatePreview, 300);
     });
-    
-    // Initialize hidden content
-    if (content && content.value) {
-        editor.value = content.value;
-        editor.dispatchEvent(new Event('input'));
-    }
-}
-
-function wrapSelection(textarea, prefix, suffix) {
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selected = textarea.value.substring(start, end);
-    const newText = prefix + selected + suffix;
-    textarea.value = textarea.value.substring(0, start) + newText + textarea.value.substring(end);
-    textarea.selectionStart = start + prefix.length;
-    textarea.selectionEnd = start + newText.length - suffix.length;
-    textarea.focus();
-    textarea.dispatchEvent(new Event('input'));
-}
-
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', initMarkdownEditor);
-</script>
+    updatePreview();
+})();
+        </script>
 
         <script>
             // Simple inline test
