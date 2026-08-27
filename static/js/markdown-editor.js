@@ -34,8 +34,11 @@
         toolbar.appendChild(btn);
     });
     editor.parentNode.insertBefore(toolbar, editor);
-    preview.style.cssText = 'display:block;padding:10px;border:1px solid var(--cms-border-color,#ddd);margin-top:10px;min-height:200px;background:var(--cms-bg-secondary,#f5f5f5)';
-    preview.textContent = 'Preview appears here as you type...';
+    // Preview styles already set in HTML, just ensure it's visible
+    preview.style.display = 'block';
+    if (!preview.textContent.trim()) {
+        preview.textContent = 'Preview appears here as you type...';
+    }
     if (content && content.value) editor.value = content.value;
     var updatePreview = function() {
         var text = editor.value;
