@@ -14,7 +14,7 @@
     // Save original parent
     var originalParent = editor.parentNode;
 
-    // Create container with split layout (editor on left, preview on right)
+    // Create container with split layout
     var container = document.createElement('div');
     container.style.display = 'flex';
     container.style.gap = '0';
@@ -31,7 +31,7 @@
     editorWrap.style.display = 'flex';
     editorWrap.style.flexDirection = 'column';
 
-    // Create modern toolbar
+    // Create toolbar
     var toolbar = document.createElement('div');
     toolbar.style.display = 'flex';
     toolbar.style.gap = '4px';
@@ -68,20 +68,13 @@
         b.style.fontSize = '13px';
         b.style.fontWeight = '500';
         b.style.transition = 'background-color 0.15s ease';
-        b.onmouseenter = function() {
-            this.style.backgroundColor = 'var(--cms-bg-tertiary, #e9ecef)';
-        };
-        b.onmouseleave = function() {
-            this.style.backgroundColor = 'transparent';
-        };
-        b.onclick = function() {
-            formatText(editor, btn.prefix, btn.suffix, btn.type);
-        };
+        b.onmouseenter = function() { this.style.backgroundColor = 'var(--cms-bg-tertiary, #e9ecef)'; };
+        b.onmouseleave = function() { this.style.backgroundColor = 'transparent'; };
+        b.onclick = function() { formatText(editor, btn.prefix, btn.suffix, btn.type); };
         toolbar.appendChild(b);
     });
 
     editorWrap.appendChild(toolbar);
-    editorWrap.appendChild(editor);
 
     // Preview wrapper (right side)
     var previewWrap = document.createElement('div');
@@ -149,10 +142,14 @@
         editor.value = contentField.value;
     }
 
-    // Assemble
+    // CORRECT ORDER: Build container, replace editor, then move editor into place
+    // 1. Build container with editorWrap and previewWrap (editor NOT in editorWrap yet)
     container.appendChild(editorWrap);
     container.appendChild(previewWrap);
+    // 2. Replace editor with container in original parent
     originalParent.replaceChild(container, editor);
+    // 3. NOW move editor into editorWrap (editor is now inside container via editorWrap)
+    editorWrap.appendChild(editor);
 
     // Format helper
     function formatText(textarea, prefix, suffix, type) {
@@ -205,26 +202,22 @@
                 continue;
             }
 
-            // Headings
             var hMatch = line.match(/^(#+)\s+(.*)/);
             if (hMatch) {
                 html += '<h' + hMatch[1].length + '>' + hMatch[2] + '</h' + hMatch[1].length + '>';
                 continue;
             }
 
-            // Blockquote
             if (line.match(/^>\s+/)) {
                 html += '<blockquote>' + line.substring(2).trim() + '</blockquote>';
                 continue;
             }
 
-            // HR
             if (line.match(/^---+$/)) {
                 html += '<hr style="border:0;border-top:1px solid var(--cms-border-color,#e0e0e0);margin:12px 0;">';
                 continue;
             }
 
-            // Lists
             var listMatch = line.match(/^\s*[-*+]\s+(.*)/);
             if (listMatch) {
                 html += '<li>' + listMatch[1] + '</li>';
@@ -236,7 +229,6 @@
                 continue;
             }
 
-            // Code
             if (line.match(/^\s*```/)) {
                 var codeLines = [line];
                 for (var j = i + 1; j < lines.length; j++) {
@@ -248,14 +240,12 @@
                 continue;
             }
 
-            // Paragraph
             html += '<p>' + line + '</p>';
         }
 
         return html;
     }
 
-    // Preview with debounce
     var previewTimeout;
     function updatePreview() {
         clearTimeout(previewTimeout);
@@ -271,7 +261,6 @@
 
     updatePreview();
 
-    // Keyboard shortcuts
     document.addEventListener('keydown', function(e) {
         if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
             e.preventDefault();
