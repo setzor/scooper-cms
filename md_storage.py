@@ -10,8 +10,8 @@ This replaces the SQLite database with a file-based approach:
 - Categories are derived from story metadata
 
 Dependencies:
-- markdown (for rendering markdown to HTML)
-- python-frontmatter or ruamel.yaml (for parsing frontmatter)
+- frontmatter (for parsing YAML frontmatter)
+- markdown (optional, for rendering markdown to HTML)
 """
 
 import html
@@ -19,183 +19,25 @@ import json
 import os
 import re
 import secrets
+import sys
 from datetime import datetime
 from pathlib import Path
 
-# Try to import markdown and frontmatter libraries
+# Required dependency
+try:
+    import frontmatter
+    HAS_FRONTMATTER = True
+except ImportError:
+    print("ERROR: 'frontmatter' package is required. Install it with:")
+    print("  pip install python-frontmatter")
+    sys.exit(1)
+
+# Optional dependency for markdown rendering
 try:
     import markdown
     HAS_MARKDOWN = True
 except ImportError:
     HAS_MARKDOWN = False
-
-try:
-    import frontmatter
-    HAS_FRONTMATTER = True
-except ImportError:
-    try:
-        import ruamel.yaml
-        HAS_YAML = True
-        HAS_FRONTMATTER = False
-    except ImportError:
-        HAS_FRONTMATTER = False
-        HAS_YAML = False
-
-# Fallback: simple frontmatter parser if libraries not available
-class SimpleFrontmatter:
-    """Simple frontmatter parser that doesn't require external dependencies."""
-    
-    @staticmethod
-    def parse(content):
-        """Parse markdown content with frontmatter into metadata and content."""
-        if not content or not content.strip():
-            return {'content': content, 'metadata': {}}
-        
-        lines = content.split('\n')
-        
-        # Check for frontmatter delimiter
-        if lines[0].strip() != '---':
-            return {'content': content, 'metadata': {}}
-        
-        # Find the closing delimiter
-        metadata_lines = []
-        content_start = None
-        for i, line in enumerate(lines[1:], 1):
-            if line.strip() == '---':
-                content_start = i + 1
-                break
-            metadata_lines.append(line)
-        
-        if content_start is None:
-            return {'content': content, 'metadata': {}}
-        
-        # Parse metadata (simple YAML-like parsing)
-        metadata = {}
-        current_key = None
-        for line in metadata_lines:
-            line = line.strip()
-            if not line:
-                continue
-            # Check for key: value pattern
-            if ':' in line:
-                key, value = line.split(':', 1)
-                key = key.strip()
-                value = value.strip()
-                
-                # Handle quoted strings
-                if (value.startswith('"') and value.endswith('"')) or \
-                   (value.startswith("'") and value.endswith("'")):
-                    value = value[1:-1]
-                
-                # Handle boolean values
-                if isinstance(value, str) and value.lower() == 'true':
-                    value = True
-                elif isinstance(value, str) and value.lower() == 'false':
-                    value = False
-                
-                # Handle null/None
-                if isinstance(value, str) and value.lower() in ['null', 'none', '']:
-                    value = None
-                
-                # Handle numbers
-                try:
-                    if '.' in value:
-                        value = float(value)
-                    else:
-                        value = int(value)
-                except (ValueError, TypeError):
-                    pass
-                
-                metadata[key] = value
-                current_key = key
-            elif current_key:
-                # Continuation of previous value
-                if current_key in metadata:
-                    existing = metadata[current_key]
-                    if isinstance(existing, str):
-                        metadata[current_key] = existing + '\n' + line
-                    else:
-                        metadata[current_key] = str(existing) + '\n' + line
-        
-        # Get the content after frontmatter
-        content_text = '\n'.join(lines[content_start:])
-        
-        return {'content': content_text, 'metadata': metadata}
-    
-    @staticmethod
-    def create(metadata, content):
-        """Create markdown content with frontmatter from metadata and content."""
-        frontmatter_lines = ['---']
-        for key, value in metadata.items():
-            if value is None:
-                frontmatter_lines.append(f"{key}:")
-            elif isinstance(value, bool):
-                frontmatter_lines.append(f"{key}: {str(value).lower()}")
-            elif isinstance(value, (int, float)):
-                frontmatter_lines.append(f"{key}: {value}")
-            elif isinstance(value, str):
-                # Escape quotes and handle multiline
-                if '\n' in value:
-                    # Use folded block style
-                    frontmatter_lines.append(f"{key}: >")
-                    for line in value.split('\n'):
-                        frontmatter_lines.append(f"  {line}")
-                else:
-                    # Use quoted string if contains special chars
-                    if any(c in value for c in [':', '#', '[', ']', '{', '}', '!', '*']) or value.strip() != value:
-                        frontmatter_lines.append(f"{key}: \"{value}\"")
-                    else:
-                        frontmatter_lines.append(f"{key}: {value}")
-            else:
-                frontmatter_lines.append(f"{key}: {value}")
-        frontmatter_lines.append('---')
-        frontmatter_lines.append('')
-        frontmatter_lines.append(content)
-        return '\n'.join(frontmatter_lines)
-
-
-# Use the appropriate parser
-if HAS_FRONTMATTER:
-    FrontmatterParser = frontmatter
-elif HAS_YAML:
-    # Simple wrapper for ruamel.yaml
-    class YamlFrontmatter:
-        @staticmethod
-        def parse(content):
-            yaml = ruamel.yaml.YAML(typ='safe')
-            if not content or not content.strip():
-                return {'content': content, 'metadata': {}}
-            lines = content.split('\n')
-            if lines[0].strip() != '---':
-                return {'content': content, 'metadata': {}}
-            
-            metadata_lines = []
-            content_start = None
-            for i, line in enumerate(lines[1:], 1):
-                if line.strip() == '---':
-                    content_start = i + 1
-                    break
-                metadata_lines.append(line)
-            
-            if content_start is None:
-                return {'content': content, 'metadata': {}}
-            
-            from io import StringIO
-            metadata = yaml.load('\n'.join(metadata_lines))
-            content_text = '\n'.join(lines[content_start:])
-            return {'content': content_text, 'metadata': metadata or {}}
-        
-        @staticmethod
-        def create(metadata, content):
-            yaml = ruamel.yaml.YAML(typ='safe')
-            from io import StringIO
-            stream = StringIO()
-            yaml.dump(metadata, stream)
-            return f"---\n{stream.getvalue()}---\n\n{content}"
-    
-    FrontmatterParser = YamlFrontmatter
-else:
-    FrontmatterParser = SimpleFrontmatter
 
 
 # ============================================================================
@@ -308,10 +150,9 @@ def get_all_story_slugs():
     slugs = []
     for md_file in STORIES_DIR.glob("*.md"):
         try:
-            result = FrontmatterParser.parse(md_file.read_text(encoding='utf-8'))
-            metadata = result.get('metadata', {})
-            if metadata.get('slug'):
-                slugs.append(metadata['slug'])
+            post = frontmatter.load(md_file)
+            if post.get('slug'):
+                slugs.append(post['slug'])
         except Exception:
             continue
     return slugs
@@ -336,24 +177,22 @@ def get_all_stories(
     
     for md_file in STORIES_DIR.glob("*.md"):
         try:
-            content = md_file.read_text(encoding='utf-8')
-            result = FrontmatterParser.parse(content)
-            metadata = result.get('metadata', {})
+            post = frontmatter.load(md_file)
             
             # Build story dict
             story = {
                 'id': md_file.stem,  # Use filename as ID
-                'title': metadata.get('title', 'Untitled'),
-                'slug': metadata.get('slug', md_file.stem),
-                'content': result.get('content', ''),
-                'excerpt': metadata.get('excerpt', ''),
-                'author': metadata.get('author', 'Admin'),
-                'category': metadata.get('category', 'General'),
-                'featured_image': metadata.get('featured_image', ''),
-                'published': metadata.get('published', False),
-                'published_at': metadata.get('published_at', ''),
-                'created_at': metadata.get('created_at', md_file.stat().st_ctime),
-                'updated_at': metadata.get('updated_at', md_file.stat().st_mtime),
+                'title': post.get('title', 'Untitled'),
+                'slug': post.get('slug', md_file.stem),
+                'content': post.content,
+                'excerpt': post.get('excerpt', ''),
+                'author': post.get('author', 'Admin'),
+                'category': post.get('category', 'General'),
+                'featured_image': post.get('featured_image', ''),
+                'published': post.get('published', False),
+                'published_at': post.get('published_at', ''),
+                'created_at': post.get('created_at', md_file.stat().st_ctime),
+                'updated_at': post.get('updated_at', md_file.stat().st_mtime),
                 'file_path': str(md_file),
             }
             all_stories.append(story)
@@ -390,8 +229,8 @@ def get_all_stories(
         if month:
             published_at = story.get('published_at', '')
             created_at = story.get('created_at', '')
-            pub_month = published_at[:7] if isinstance(published_at, str) else ''
-            create_month = created_at[:7] if isinstance(created_at, str) else ''
+            pub_month = published_at[:7] if isinstance(published_at, str) and len(published_at) >= 7 else ''
+            create_month = created_at[:7] if isinstance(created_at, str) and len(created_at) >= 7 else ''
             if pub_month != month and create_month != month:
                 continue
         
@@ -429,23 +268,21 @@ def get_story_by_id(story_id):
         return None
     
     try:
-        content = md_file.read_text(encoding='utf-8')
-        result = FrontmatterParser.parse(content)
-        metadata = result.get('metadata', {})
+        post = frontmatter.load(md_file)
         
         story = {
             'id': story_id,
-            'title': metadata.get('title', 'Untitled'),
-            'slug': metadata.get('slug', story_id),
-            'content': result.get('content', ''),
-            'excerpt': metadata.get('excerpt', ''),
-            'author': metadata.get('author', 'Admin'),
-            'category': metadata.get('category', 'General'),
-            'featured_image': metadata.get('featured_image', ''),
-            'published': metadata.get('published', False),
-            'published_at': metadata.get('published_at', ''),
-            'created_at': metadata.get('created_at', md_file.stat().st_ctime),
-            'updated_at': metadata.get('updated_at', md_file.stat().st_mtime),
+            'title': post.get('title', 'Untitled'),
+            'slug': post.get('slug', story_id),
+            'content': post.content,
+            'excerpt': post.get('excerpt', ''),
+            'author': post.get('author', 'Admin'),
+            'category': post.get('category', 'General'),
+            'featured_image': post.get('featured_image', ''),
+            'published': post.get('published', False),
+            'published_at': post.get('published_at', ''),
+            'created_at': post.get('created_at', md_file.stat().st_ctime),
+            'updated_at': post.get('updated_at', md_file.stat().st_mtime),
             'file_path': str(md_file),
         }
         
@@ -467,23 +304,21 @@ def get_story_by_slug(slug):
     ensure_directories()
     for md_file in STORIES_DIR.glob("*.md"):
         try:
-            content = md_file.read_text(encoding='utf-8')
-            result = FrontmatterParser.parse(content)
-            metadata = result.get('metadata', {})
-            if metadata.get('slug') == slug:
+            post = frontmatter.load(md_file)
+            if post.get('slug') == slug:
                 story = {
                     'id': md_file.stem,
-                    'title': metadata.get('title', 'Untitled'),
+                    'title': post.get('title', 'Untitled'),
                     'slug': slug,
-                    'content': result.get('content', ''),
-                    'excerpt': metadata.get('excerpt', ''),
-                    'author': metadata.get('author', 'Admin'),
-                    'category': metadata.get('category', 'General'),
-                    'featured_image': metadata.get('featured_image', ''),
-                    'published': metadata.get('published', False),
-                    'published_at': metadata.get('published_at', ''),
-                    'created_at': metadata.get('created_at', md_file.stat().st_ctime),
-                    'updated_at': metadata.get('updated_at', md_file.stat().st_mtime),
+                    'content': post.content,
+                    'excerpt': post.get('excerpt', ''),
+                    'author': post.get('author', 'Admin'),
+                    'category': post.get('category', 'General'),
+                    'featured_image': post.get('featured_image', ''),
+                    'published': post.get('published', False),
+                    'published_at': post.get('published_at', ''),
+                    'created_at': post.get('created_at', md_file.stat().st_ctime),
+                    'updated_at': post.get('updated_at', md_file.stat().st_mtime),
                     'file_path': str(md_file),
                 }
                 
@@ -523,24 +358,33 @@ def create_story(data):
     metadata = {
         'title': data.get('title', 'Untitled'),
         'slug': slug,
-        'excerpt': data.get('excerpt', ''),
-        'author': data.get('author', 'Admin'),
-        'category': data.get('category', 'General'),
-        'featured_image': data.get('featured_image', ''),
-        'published': data.get('published', False),
-        'published_at': data.get('published_at', datetime.now().isoformat()),
-        'created_at': datetime.now().isoformat(),
-        'updated_at': datetime.now().isoformat(),
     }
     
-    # Handle HTML content - store as markdown
-    # For now, we'll store HTML as-is in the content field
-    # In a full migration, you'd convert HTML to markdown
+    # Add optional fields if they exist
+    if data.get('excerpt'):
+        metadata['excerpt'] = data['excerpt']
+    if data.get('author'):
+        metadata['author'] = data['author']
+    if data.get('category'):
+        metadata['category'] = data['category']
+    if data.get('featured_image'):
+        metadata['featured_image'] = data['featured_image']
+    if data.get('published') is not None:
+        metadata['published'] = data['published']
+    if data.get('published_at'):
+        metadata['published_at'] = data['published_at']
+    if data.get('created_at'):
+        metadata['created_at'] = data['created_at']
+    if data.get('updated_at'):
+        metadata['updated_at'] = data['updated_at']
+    
+    # Get content
     content = data.get('content', '')
     
     # Create the markdown file
-    md_content = FrontmatterParser.create(metadata, content)
-    md_file.write_text(md_content, encoding='utf-8')
+    post = frontmatter.Post(content, **metadata)
+    with open(md_file, 'w', encoding='utf-8') as f:
+        frontmatter.dump(post, f)
     
     return md_file.stem  # Return the ID (filename without extension)
 
@@ -554,31 +398,35 @@ def update_story(story_id, data):
         return False
     
     try:
-        # Get existing metadata to preserve unchanged fields
-        existing_content = md_file.read_text(encoding='utf-8')
-        result = FrontmatterParser.parse(existing_content)
-        existing_metadata = result.get('metadata', {})
+        # Load existing post
+        post = frontmatter.load(md_file)
         
-        # Update metadata with new data
-        metadata = existing_metadata.copy()
-        metadata.update({
-            'title': data.get('title', metadata.get('title', 'Untitled')),
-            'slug': data.get('slug', metadata.get('slug', story_id)),
-            'excerpt': data.get('excerpt', metadata.get('excerpt', '')),
-            'author': data.get('author', metadata.get('author', 'Admin')),
-            'category': data.get('category', metadata.get('category', 'General')),
-            'featured_image': data.get('featured_image', metadata.get('featured_image', '')),
-            'published': data.get('published', metadata.get('published', False)),
-            'published_at': data.get('published_at', metadata.get('published_at', '')),
-            'updated_at': datetime.now().isoformat(),
-        })
+        # Update metadata
+        if 'title' in data:
+            post['title'] = data['title']
+        if 'slug' in data:
+            post['slug'] = data['slug']
+        if 'excerpt' in data:
+            post['excerpt'] = data['excerpt']
+        if 'author' in data:
+            post['author'] = data['author']
+        if 'category' in data:
+            post['category'] = data['category']
+        if 'featured_image' in data:
+            post['featured_image'] = data['featured_image']
+        if 'published' in data:
+            post['published'] = data['published']
+        if 'published_at' in data:
+            post['published_at'] = data['published_at']
+        post['updated_at'] = datetime.now().isoformat()
         
         # Update content
-        content = data.get('content', result.get('content', ''))
+        if 'content' in data:
+            post.content = data['content']
         
         # Write updated file
-        md_content = FrontmatterParser.create(metadata, content)
-        md_file.write_text(md_content, encoding='utf-8')
+        with open(md_file, 'w', encoding='utf-8') as f:
+            frontmatter.dump(post, f)
         
         return True
     except Exception:
@@ -612,10 +460,8 @@ def get_all_categories():
     # Get categories from existing stories
     for md_file in STORIES_DIR.glob("*.md"):
         try:
-            content = md_file.read_text(encoding='utf-8')
-            result = FrontmatterParser.parse(content)
-            metadata = result.get('metadata', {})
-            category = metadata.get('category', 'General')
+            post = frontmatter.load(md_file)
+            category = post.get('category', 'General')
             categories.add(category)
         except Exception:
             continue
@@ -737,15 +583,25 @@ def migrate_from_sqlite(sqlite_db_path):
         metadata = {
             'title': story['title'],
             'slug': story['slug'],
-            'excerpt': story['excerpt'] or '',
-            'author': story['author'],
-            'category': story['category'],
-            'featured_image': story['featured_image'] or '',
-            'published': bool(story['published']),
-            'published_at': story['published_at'] or '',
-            'created_at': story['created_at'] or '',
-            'updated_at': story['updated_at'] or '',
         }
+        
+        # Add optional fields
+        if story.get('excerpt'):
+            metadata['excerpt'] = story['excerpt']
+        if story.get('author'):
+            metadata['author'] = story['author']
+        if story.get('category'):
+            metadata['category'] = story['category']
+        if story.get('featured_image'):
+            metadata['featured_image'] = story['featured_image']
+        if story.get('published') is not None:
+            metadata['published'] = bool(story['published'])
+        if story.get('published_at'):
+            metadata['published_at'] = story['published_at']
+        if story.get('created_at'):
+            metadata['created_at'] = story['created_at']
+        if story.get('updated_at'):
+            metadata['updated_at'] = story['updated_at']
         
         content = story['content']
         
@@ -759,8 +615,9 @@ def migrate_from_sqlite(sqlite_db_path):
             md_file = STORIES_DIR / filename
             metadata['slug'] = story['slug'] + '-' + secrets.token_hex(2)
         
-        md_content = FrontmatterParser.create(metadata, content)
-        md_file.write_text(md_content, encoding='utf-8')
+        post = frontmatter.Post(content, **metadata)
+        with open(md_file, 'w', encoding='utf-8') as f:
+            frontmatter.dump(post, f)
     
     conn.close()
     print(f"Migrated {len(stories)} stories")
