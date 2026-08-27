@@ -881,7 +881,8 @@ class Parser:
         
         if token.type == TokenType.TEXT:
             # This could be a literal value
-            val = token.value.strip()
+            # Preserve newlines after <script> and <style> tags
+            val = token.value
             self.advance()
             return TextNode(val, token.line, token.col)
         
