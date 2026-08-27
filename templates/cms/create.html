@@ -408,32 +408,6 @@
 })();
         </script>
 
-        <script>
-            // Simple inline test
-            console.log('=== INLINE TEST ===');
-            console.log('markdown-editor element:', document.getElementById('markdown-editor'));
-            console.log('markdown-preview element:', document.getElementById('markdown-preview'));
-            console.log('content element:', document.getElementById('content'));
-            
-            // Try to manually create toolbar
-            const editor = document.getElementById('markdown-editor');
-            const preview = document.getElementById('markdown-preview');
-            
-            if (editor && preview) {
-                console.log('Both elements found!');
-                
-                // Create a simple toolbar
-                const toolbar = document.createElement('div');
-                toolbar.style.marginBottom = '10px';
-                toolbar.innerHTML = '<button onclick="alert('Bold')" style="padding: 5px 10px; margin-right: 5px;">B</button><button onclick="alert('Italic')" style="padding: 5px 10px;">I</button>';
-                
-                editor.parentNode.insertBefore(toolbar, editor);
-                
-                // Set preview to show it's working
-                preview.innerHTML = '<p style="color: green;">Preview is working! Type in the editor above.</p>';
-            } else {
-                console.error('Elements not found!');
-            }
-        </script>
+        
     </body>
 </html>
