@@ -551,6 +551,9 @@ class ScooperHandler(BaseHTTPRequestHandler):
 
     def serve_static(self, path):
         """Serve static files."""
+        # Strip query parameters from path
+        if '?' in path:
+            path = path.split('?')[0]
         # Remove the /static/ prefix properly
         if path.startswith("/static/"):
             file_path = os.path.join(
