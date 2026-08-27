@@ -12,33 +12,34 @@
     var toolbar = document.createElement('div');
     toolbar.style.cssText = 'margin-bottom:10px;display:flex;gap:5px;flex-wrap:wrap';
     
-    ['B','I','H1','H2','H3','Link','Image','UL','OL','HR'].forEach(function(label) {
-        var btn = document.createElement('button');
-        btn.textContent = label;
-        btn.title = label + ' formatting';
-        btn.style.cssText = 'padding:5px 10px;border:1px solid #ccc;border-radius:3px;cursor:pointer';
-        btn.onclick = function() {
+    var buttons = [
+        { label: 'B', title: 'Bold', wrap: '**' },
+        { label: 'I', title: 'Italic', wrap: '*' },
+        { label: 'H1', title: 'Heading 1', wrap: '# ' },
+        { label: 'H2', title: 'Heading 2', wrap: '## ' },
+        { label: 'H3', title: 'Heading 3', wrap: '### ' },
+        { label: 'Link', title: 'Insert Link', wrap: '[](url)' },
+        { label: 'Image', title: 'Insert Image', wrap: '![](url)' },
+        { label: 'UL', title: 'Bullet List', wrap: '- ' },
+        { label: 'OL', title: 'Numbered List', wrap: '1. ' },
+        { label: 'HR', title: 'Horizontal Rule', wrap: '---' }
+    ];
+    
+    buttons.forEach(function(btn) {
+        var b = document.createElement('button');
+        b.textContent = btn.label;
+        b.title = btn.title;
+        b.style.cssText = 'padding:5px 10px;border:1px solid #ccc;border-radius:3px;cursor:pointer';
+        b.onclick = function() {
             var text = editor.value;
             var start = editor.selectionStart;
             var end = editor.selectionEnd;
             var sel = text.substring(start, end);
             var before = text.substring(0, start);
             var after = text.substring(end);
-            var wrapMap = {
-                'B': '**',
-                'I': '*',
-                'H1': '# ',
-                'H2': '## ',
-                'H3': '### ',
-                'Link': '[](url)',
-                'Image': '![](url)',
-                'UL': '- ',
-                'OL': '1. ',
-                'HR': '---'
-            };
-            var wrap = wrapMap[label];
+            var wrap = btn.wrap;
             if (wrap) {
-                var suffix = label === 'HR' ? '' : wrap.split(' ')[0];
+                var suffix = btn.label === 'HR' ? '' : wrap.split(' ')[0];
                 editor.value = before + wrap + sel + suffix;
                 editor.selectionStart = start + wrap.length;
                 editor.selectionEnd = start + wrap.length + sel.length;
@@ -46,7 +47,7 @@
                 if (content) content.value = editor.value;
             }
         };
-        toolbar.appendChild(btn);
+        toolbar.appendChild(b);
     });
     
     editor.parentNode.insertBefore(toolbar, editor);
@@ -72,9 +73,7 @@
         }
         // Basic markdown to HTML
         var html = text
-            .replace(/
-
-/g, '<p></p>')
+            .replace(/\n\n/g, '<p></p>')
             .replace(/^#+\s+(.*)$/gm, function(m, p1) {
                 var level = (m.match(/^#+/)[0] || '').length;
                 return '<h' + level + '>' + p1 + '</h' + level + '>';
@@ -82,10 +81,8 @@
             .replace(/^>\s+(.*)$/gm, '<blockquote>$1</blockquote>')
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.+?)\*/g, '<em>$1</em>')
-            .replace(/`([^`
-]+)`/g, '<code>$1</code>')
-            .replace(/
-/g, '<br>');
+            .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+            .replace(/\n/g, '<br>');
         preview.innerHTML = '<p>' + html + '</p>';
     };
     
