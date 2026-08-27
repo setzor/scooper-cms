@@ -149,7 +149,7 @@
     // Assemble
     container.appendChild(editorWrap);
     container.appendChild(previewWrap);
-    editor.parentNode.insertBefore(container, editor);
+    editor.parentNode.replaceChild(container, editor);
 
     // Format helper
     function formatText(textarea, prefix, suffix, type) {
