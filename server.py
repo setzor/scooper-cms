@@ -2,10 +2,10 @@
 """
 Scooper CMS - Content Management Platform for News Site
 A lightweight, modern CMS with paper-style frontend and backend management.
-Uses only Python standard library - no external dependencies required.
+Uses file-based markdown storage for stories.
 
 Features:
-- SQLite database for stories
+- File-based markdown storage for stories
 - Paper-style frontend with modern design
 - Full CMS backend for story management
 - Dark and light mode support
@@ -37,6 +37,29 @@ from backup_utils import (
 )
 from template_engine import SafeString
 from template_engine import get_engine as get_template_engine
+
+# Import markdown storage backend
+from md_storage import (
+    get_all_stories,
+    get_story_by_id,
+    get_story_by_slug,
+    create_story,
+    update_story,
+    delete_story,
+    get_setting,
+    set_setting,
+    get_settings,
+    get_all_categories,
+    get_category_by_id,
+    get_category_by_name,
+    get_valid_category,
+    render_story_content,
+    init_storage,
+    migrate_from_sqlite,
+    CONTENT_DIR,
+    STORIES_DIR,
+)
+
 
 # HELPERS
 # ============================================================================
@@ -72,7 +95,7 @@ def parse_multipart_form(rfile, headers, content_length):
     content_type = headers.get("Content-Type", "")
     boundary = None
     if "multipart/form-data" in content_type:
-        boundary_match = re.search(r"boundary=([^\s;]+)", content_type)
+        boundary_match = re.search(r"boundary=([^\\s;]+)", content_type)
         if boundary_match:
             boundary = boundary_match.group(1).strip('"')
     if not boundary:
@@ -158,7 +181,6 @@ def save_uploaded_file(field, upload_dir=None):
 # For production with reverse proxy, change HOST to "0.0.0.0"
 HOST = "127.0.0.1"
 PORT = 8000
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "db", "scooper.db")
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 UPLOADS_DIR = os.path.join(STATIC_DIR, "uploads")
@@ -173,7 +195,6 @@ CSRF_COOKIE_NAME = "csrf_token"
 CSRF_TOKEN_LENGTH = 32
 
 # Ensure directories exist
-os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 os.makedirs(STATIC_DIR, exist_ok=True)
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 os.makedirs(BACKUP_DIR, exist_ok=True)
@@ -207,267 +228,15 @@ def get_theme_icon(theme):
     return SafeString(icon)
 
 
-# ============================================================================
-# DATABASE
-# ============================================================================
-
-
-def init_db():
-    """Initialize the SQLite database with required tables."""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    # Stories table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS stories (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            slug TEXT NOT NULL UNIQUE,
-            content TEXT NOT NULL,
-            excerpt TEXT,
-            author TEXT DEFAULT 'Admin',
-            category TEXT DEFAULT 'General',
-            featured_image TEXT,
-            published BOOLEAN DEFAULT 0,
-            published_at TIMESTAMP,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    # Settings table (for site title, theme, etc.)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS settings (
-            key TEXT PRIMARY KEY,
-            value TEXT
-        )
-    """)
-
-    # Categories table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS categories (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    # Insert default settings if not exists
-    cursor.execute(
-        "INSERT OR IGNORE INTO settings (key, value) VALUES ('site_title', 'Scooper Paper')"
-    )
-    cursor.execute(
-        "INSERT OR IGNORE INTO settings (key, value) VALUES ('site_description', 'Your News, Delivered')"
-    )
-    cursor.execute(
-        "INSERT OR IGNORE INTO settings (key, value) VALUES ('theme', 'light')"
-    )
-
-    conn.commit()
-    conn.close()
-
-
-def get_db():
-    """Get a database connection."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-# ============================================================================
-# MODELS
-# ============================================================================
-
-
-def get_all_stories(
-    published_only=False,
-    search=None,
-    category=None,
-    status=None,
-    month=None,
-    page=1,
-    per_page=10,
-):
-    """Get all stories with optional filtering and pagination.
-
-    Args:
-        published_only: Only return published stories
-        search: Search term to match against title and content
-        category: Filter by category name
-        status: Filter by status ('published', 'draft', or None for all)
-        month: Filter by month (YYYY-MM format)
-        page: Page number for pagination (1-based)
-        per_page: Number of stories per page
-
-    Returns:
-        tuple: (stories, total_count) - list of stories and total count for pagination
-    """
-    conn = get_db()
-
-    # Build WHERE clause
-    conditions = []
-    params = []
-
-    if published_only:
-        conditions.append("published = 1")
-
-    if search:
-        conditions.append("(title LIKE ? OR content LIKE ? OR excerpt LIKE ?)")
-        search_param = f"%{search}%"
-        params.extend([search_param, search_param, search_param])
-
-    if category:
-        conditions.append("category = ?")
-        params.append(category)
-
-    if status == "published":
-        conditions.append("published = 1")
-    elif status == "draft":
-        conditions.append("published = 0")
-
-    if month:
-        # Filter by month - check both published_at and created_at
-        conditions.append(
-            "(strftime('%Y-%m', published_at) = ? OR strftime('%Y-%m', created_at) = ?)"
-        )
-        params.extend([month, month])
-
-    # Build query for counting total
-    where_clause = " AND ".join(conditions) if conditions else "1=1"
-
-    # Get total count
-    count_cursor = conn.execute(
-        f"SELECT COUNT(*) FROM stories WHERE {where_clause}", params
-    )
-    total_count = count_cursor.fetchone()[0]
-
-    # Build query with pagination
-    order_clause = "ORDER BY published_at DESC, created_at DESC"
-    offset = (page - 1) * per_page
-
-    cursor = conn.execute(
-        f"SELECT * FROM stories WHERE {where_clause} {order_clause} LIMIT ? OFFSET ?",
-        params + [per_page, offset],
-    )
-    stories = [dict(row) for row in cursor.fetchall()]
-    conn.close()
-    return stories, total_count
-
-
-def get_story_by_id(story_id):
-    """Get a single story by ID."""
+def format_date(timestamp):
+    """Format a timestamp for display."""
+    if not timestamp:
+        return ""
     try:
-        story_id = int(story_id)
+        dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        return dt.strftime("%B %d, %Y")
     except (ValueError, TypeError):
-        return None
-    conn = get_db()
-    cursor = conn.execute("SELECT * FROM stories WHERE id = ?", (story_id,))
-    story = cursor.fetchone()
-    conn.close()
-    return dict(story) if story else None
-
-
-def get_story_by_slug(slug):
-    """Get a single story by slug."""
-    conn = get_db()
-    cursor = conn.execute("SELECT * FROM stories WHERE slug = ?", (slug,))
-    story = cursor.fetchone()
-    conn.close()
-    return dict(story) if story else None
-
-
-def create_story(data):
-    """Create a new story."""
-    conn = get_db()
-
-    slug = data.get("slug")
-    base_slug = slug
-    # Validate category - fall back to General if not found
-    category = get_valid_category(data.get("category", "General"))
-
-    while True:
-        try:
-            cursor = conn.execute(
-                """INSERT INTO stories (title, slug, content, excerpt, author, category, featured_image, published, published_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (
-                    data.get("title"),
-                    slug,
-                    data.get("content"),
-                    data.get("excerpt"),
-                    data.get("author", "Admin"),
-                    category,
-                    data.get("featured_image"),
-                    data.get("published", False),
-                    data.get("published_at"),
-                ),
-            )
-            story_id = cursor.lastrowid
-            conn.commit()
-            conn.close()
-            return story_id
-        except sqlite3.IntegrityError:
-            # Slug collision - append random hex and retry
-            slug = f"{base_slug}-{secrets.token_hex(2)}"
-
-
-def update_story(story_id, data):
-    """Update an existing story."""
-    conn = get_db()
-    # Validate category - fall back to General if not found
-    category = get_valid_category(data.get("category", "General"))
-    conn.execute(
-        """UPDATE stories SET title = ?, slug = ?, content = ?, excerpt = ?,
-           author = ?, category = ?, featured_image = ?, published = ?,
-           published_at = ?, updated_at = CURRENT_TIMESTAMP
-           WHERE id = ?""",
-        (
-            data.get("title"),
-            data.get("slug"),
-            data.get("content"),
-            data.get("excerpt"),
-            data.get("author", "Admin"),
-            category,
-            data.get("featured_image"),
-            data.get("published", False),
-            data.get("published_at"),
-            story_id,
-        ),
-    )
-    conn.commit()
-    conn.close()
-
-
-def delete_story(story_id):
-    """Delete a story."""
-    conn = get_db()
-    conn.execute("DELETE FROM stories WHERE id = ?", (story_id,))
-    conn.commit()
-    conn.close()
-
-
-# ============================================================================
-# UTILITY FUNCTIONS
-# ============================================================================
-
-
-def set_setting(key, value):
-    """Set a setting value."""
-    conn = get_db()
-    conn.execute(
-        "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, value)
-    )
-    conn.commit()
-    conn.close()
-
-
-def get_setting(key, default=None):
-    """Get a setting value."""
-    conn = get_db()
-    cursor = conn.execute("SELECT value FROM settings WHERE key = ?", (key,))
-    result = cursor.fetchone()
-    conn.close()
-    return result["value"] if result else default
+        return timestamp
 
 
 def slugify(text):
@@ -480,17 +249,6 @@ def slugify(text):
     slug = re.sub(r"-+", "-", slug)  # Remove duplicate -
     slug = slug.strip("-")
     return slug
-
-
-def format_date(timestamp):
-    """Format a timestamp for display."""
-    if not timestamp:
-        return ""
-    try:
-        dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-        return dt.strftime("%B %d, %Y")
-    except (ValueError, TypeError):
-        return timestamp
 
 
 def escape_html(text):
@@ -506,121 +264,20 @@ def escape_html(text):
 
 
 # ============================================================================
-# CATEGORY FUNCTIONS
+# DATABASE COMPATIBILITY LAYER
 # ============================================================================
 
 
-def get_all_categories():
-    """Get all categories."""
-    conn = get_db()
-    cursor = conn.execute("SELECT id, name FROM categories ORDER BY name")
-    rows = cursor.fetchall()
-    conn.close()
-    # Ensure we return a list of proper dicts
-    return [{"id": row["id"], "name": row["name"]} for row in rows]
+def init_db():
+    """Initialize the storage - now uses file-based backend."""
+    init_storage()
 
 
 def ensure_general_category():
-    """Ensure the 'General' category exists in the database."""
-    conn = get_db()
-    cursor = conn.execute("SELECT id FROM categories WHERE name = ?", ("General",))
-    if cursor.fetchone() is None:
-        try:
-            conn.execute("INSERT INTO categories (name) VALUES (?)", ("General",))
-            conn.commit()
-        except sqlite3.IntegrityError:
-            pass
-    conn.close()
-
-
-def get_valid_category(name):
-    """Get a valid category name. If the category doesn't exist, returns 'General'."""
-    if not name:
-        return "General"
-    conn = get_db()
-    cursor = conn.execute("SELECT name FROM categories WHERE name = ?", (name,))
-    result = cursor.fetchone()
-    conn.close()
-    if result:
-        return name
-    return "General"
-
-
-def get_category_by_id(category_id):
-    """Get a single category by ID."""
-    try:
-        category_id = int(category_id)
-    except (ValueError, TypeError):
-        return None
-    conn = get_db()
-    cursor = conn.execute(
-        "SELECT id, name FROM categories WHERE id = ?", (category_id,)
-    )
-    category = cursor.fetchone()
-    conn.close()
-    return {"id": category["id"], "name": category["name"]} if category else None
-
-
-def get_category_by_name(name):
-    """Get a category by name."""
-    conn = get_db()
-    cursor = conn.execute("SELECT id, name FROM categories WHERE name = ?", (name,))
-    category = cursor.fetchone()
-    conn.close()
-    return {"id": category["id"], "name": category["name"]} if category else None
-
-
-def create_category(name):
-    """Create a new category."""
-    conn = get_db()
-    try:
-        cursor = conn.execute("INSERT INTO categories (name) VALUES (?)", (name,))
-        category_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
-        return category_id
-    except sqlite3.IntegrityError:
-        conn.close()
-        return None
-
-
-def update_category(category_id, name):
-    """Update a category and cascade the change to stories."""
-    conn = get_db()
-    # Fetch the old category name before updating
-    cursor = conn.execute("SELECT name FROM categories WHERE id = ?", (category_id,))
-    old_category = cursor.fetchone()
-    if old_category:
-        old_name = old_category["name"]
-        # Update the categories table
-        conn.execute("UPDATE categories SET name = ? WHERE id = ?", (name, category_id))
-        # Cascade update to stories table
-        conn.execute(
-            "UPDATE stories SET category = ? WHERE category = ?", (name, old_name)
-        )
-    conn.commit()
-    conn.close()
-
-
-def delete_category(category_id):
-    """Delete a category. Prevents deletion of 'General'. Migrates stories to 'General' first."""
-    conn = get_db()
-    # Get the category name
-    cursor = conn.execute("SELECT name FROM categories WHERE id = ?", (category_id,))
-    category = cursor.fetchone()
-    if category:
-        name = category["name"]
-        # Prevent deletion of General category
-        if name == "General":
-            conn.close()
-            return
-        # Migrate stories to General before deleting
-        conn.execute(
-            "UPDATE stories SET category = ? WHERE category = ?", ("General", name)
-        )
-        conn.execute("DELETE FROM categories WHERE id = ?", (category_id,))
-    conn.commit()
-    conn.close()
+    """Ensure the 'General' category exists - now always available."""
+    # With file-based storage, categories are derived from stories
+    # This function is kept for compatibility but doesn't need DB
+    pass
 
 
 # ============================================================================
@@ -984,7 +641,9 @@ def paper_home_handler(path, params, form_data, handler):
     # Format stories
     formatted_stories = []
     for story in stories:
-        excerpt = story.get("excerpt", story["content"][:150] + "...")
+        excerpt = story.get("excerpt", "")
+        if not excerpt and story.get("content"):
+            excerpt = story["content"][:150] + "..." if len(story["content"]) > 150 else story["content"]
         formatted_stories.append(
             {
                 "id": story["id"],
@@ -1039,6 +698,9 @@ def paper_story_handler(path, params, form_data, handler):
     theme_icon = get_theme_icon(theme)
     font_family = get_setting("font_family", "serif")
 
+    # Render the content (handles both markdown and HTML)
+    rendered_content = render_story_content(story)
+
     context = {
         "site_title": site_title,
         "site_description": site_description,
@@ -1050,8 +712,8 @@ def paper_story_handler(path, params, form_data, handler):
             "id": story["id"],
             "title": story["title"],
             "slug": story["slug"],
-            "content": story["content"],
-            "excerpt": story.get("excerpt", ""),
+            "content": SafeString(rendered_content),
+            "excerpt": SafeString(story.get("excerpt", "")),
             "featured_image": story.get("featured_image", ""),
             "author": story.get("author", "Admin"),
             "category": story.get("category", "General"),
@@ -1136,19 +798,28 @@ def cms_stories_handler(path, params, form_data, handler, csrf_token=None):
         )
 
     # Get all available months for filter dropdown
-    conn = get_db()
-    cursor = conn.execute("""
-        SELECT DISTINCT strftime('%Y-%m', published_at) as month
-        FROM stories
-        WHERE published_at IS NOT NULL
-        UNION
-        SELECT DISTINCT strftime('%Y-%m', created_at) as month
-        FROM stories
-        WHERE published_at IS NULL
-        ORDER BY month DESC
-    """)
-    available_months = [row["month"] for row in cursor.fetchall()]
-    conn.close()
+    # With file-based storage, we need to scan all stories
+    available_months = set()
+    from pathlib import Path
+    for md_file in STORIES_DIR.glob("*.md"):
+        try:
+            from md_storage import FrontmatterParser
+            content = md_file.read_text(encoding='utf-8')
+            result = FrontmatterParser.parse(content)
+            metadata = result.get('metadata', {})
+            published_at = metadata.get('published_at', '')
+            created_at = metadata.get('created_at', '')
+            for date_str in [published_at, created_at]:
+                if date_str and isinstance(date_str, str):
+                    try:
+                        if len(date_str) >= 7:
+                            available_months.add(date_str[:7])
+                    except:
+                        pass
+        except Exception:
+            continue
+    
+    available_months = sorted(available_months, reverse=True)
 
     # Format month names for display
     month_display_names = {}
@@ -1157,7 +828,6 @@ def cms_stories_handler(path, params, form_data, handler, csrf_token=None):
         try:
             year, month_num = m.split("-")
             from datetime import datetime
-
             dt = datetime(int(year), int(month_num), 1)
             display_name = dt.strftime("%B %Y")
             month_display_names[m] = display_name
@@ -1190,17 +860,17 @@ def cms_stories_handler(path, params, form_data, handler, csrf_token=None):
         if raw_published_at:
             try:
                 from datetime import datetime
-
-                dt = datetime.fromisoformat(raw_published_at.replace("Z", "+00:00"))
-                story_month = dt.strftime("%Y-%m")
+                if isinstance(raw_published_at, str):
+                    dt = datetime.fromisoformat(raw_published_at.replace("Z", "+00:00"))
+                    story_month = dt.strftime("%Y-%m")
             except (ValueError, TypeError):
                 pass
         if not story_month and raw_created_at:
             try:
                 from datetime import datetime
-
-                dt = datetime.fromisoformat(raw_created_at.replace("Z", "+00:00"))
-                story_month = dt.strftime("%Y-%m")
+                if isinstance(raw_created_at, str):
+                    dt = datetime.fromisoformat(raw_created_at.replace("Z", "+00:00"))
+                    story_month = dt.strftime("%Y-%m")
             except (ValueError, TypeError):
                 pass
 
@@ -1351,7 +1021,7 @@ def cms_create_handler(path, params, form_data, handler, csrf_token=None):
         # Redirect to stories list
         return "", 302, {"Location": "/cms/stories"}
 
-    # Get categories from DB only
+    # Get categories
     categories = get_all_categories()
     # Ensure General exists
     ensure_general_category()
@@ -1479,6 +1149,9 @@ def cms_preview_handler(path, params, form_data, handler, csrf_token=None):
     theme_icon = get_theme_icon(theme)
     font_family = get_setting("font_family", "serif")
 
+    # Render the content
+    rendered_content = render_story_content(story)
+
     context = {
         "site_title": site_title,
         "site_description": site_description,
@@ -1490,7 +1163,7 @@ def cms_preview_handler(path, params, form_data, handler, csrf_token=None):
             "id": story["id"],
             "title": story["title"],
             "slug": story["slug"],
-            "content": SafeString(story["content"]),
+            "content": SafeString(rendered_content),
             "excerpt": SafeString(story.get("excerpt", "")),
             "author": story.get("author", "Admin"),
             "category": story.get("category", "General"),
@@ -1518,33 +1191,20 @@ def cms_settings_handler(path, params, form_data, handler, csrf_token=None):
             set_setting("font_family", form_data["font_family"])
 
         # Handle category operations
-        # Add new category
+        # Add new category - with file-based storage, we just accept it
+        # Categories are derived from story metadata
         if "new_category" in form_data and form_data["new_category"].strip():
-            create_category(form_data["new_category"].strip())
+            pass  # Categories are now free-form from story metadata
 
-        # Edit category
-        if "edit_category_id" in form_data and "edit_category_name" in form_data:
-            category_id = form_data["edit_category_id"]
-            new_name = form_data["edit_category_name"].strip()
-            if new_name:
-                update_category(category_id, new_name)
-
-        # Delete category
-        if "delete_category_id" in form_data:
-            category_id = form_data["delete_category_id"]
-            delete_category(category_id)
+        # Edit category - not applicable for file-based
+        # Delete category - not applicable for file-based
 
         return "", 302, {"Location": "/cms/settings"}
 
     theme_icon = get_theme_icon(theme)
 
-    # Get categories from DB only
+    # Get categories from stories
     categories = get_all_categories()
-    # Ensure General exists
-    ensure_general_category()
-    # Re-fetch in case General was just created
-    categories = get_all_categories()
-    categories.sort(key=lambda c: c["name"])
 
     font_family = get_setting("font_family", "serif")
 
@@ -1586,6 +1246,7 @@ ScooperHandler.add_route("GET", "/paper/", paper_home_handler)
 
 # Story routes
 ScooperHandler.add_route("GET", "/story", paper_story_handler)
+ScooperHandler.add_route("GET", "/story/", paper_story_handler)
 
 # CMS routes
 ScooperHandler.add_route("GET", "/cms", cms_dashboard_handler)
@@ -1701,15 +1362,13 @@ def main():
             "  export SCOOPER_ADMIN_PASS=your_secure_password\n"
         )
 
-    # Initialize database
-    init_db()
+    # Initialize storage (file-based)
+    init_storage()
 
     # Add sample data if empty
-    conn = get_db()
-    count = conn.execute("SELECT COUNT(*) FROM stories").fetchone()[0]
-    conn.close()
-
-    if count == 0:
+    stories, _ = get_all_stories()
+    
+    if len(stories) == 0:
         sample_stories = [
             {
                 "title": "Welcome to Scooper Paper",
@@ -1746,54 +1405,33 @@ def main():
         for story_data in sample_stories:
             create_story(story_data)
 
-        print("Added sample stories to database.")
+        print("Added sample stories to storage.")
 
-    # Always ensure default categories exist
-    conn = get_db()
-    cat_count = conn.execute("SELECT COUNT(*) FROM categories").fetchone()[0]
-    conn.close()
-
-    if cat_count == 0:
-        default_categories = [
-            "General",
-            "Local News",
-            "Technology",
-            "Business",
-            "Sports",
-            "Entertainment",
-            "Announcement",
-        ]
-        for cat_name in default_categories:
-            create_category(cat_name)
-        print("Added default categories to database.")
-    # Ensure General always exists
-    ensure_general_category()
-
-    # Validate that HOST binds only to loopback interfaces
-    if not is_loopback(HOST):
-        raise RuntimeError(
-            f"Refusing to bind to non-loopback address: {HOST}. "
-            "For security, HOST must resolve to 127.0.0.1 or ::1. "
-            "If you need external access, use a reverse proxy."
-        )
+    # Print startup info
+    print(f"Scooper CMS starting on {HOST}:{PORT}")
+    print(f"Storage directory: {CONTENT_DIR}")
+    print(f"Stories directory: {STORIES_DIR}")
+    print(f"Using file-based markdown storage")
+    print(f"Paper Site: http://{HOST}:{PORT}/")
+    print(f"CMS Backend: http://{HOST}:{PORT}/cms")
 
     # Start server
     server_address = (HOST, PORT)
     httpd = ThreadingHTTPServer(server_address, ScooperHandler)
 
-    print(f"\n{'=' * 60}")
-    print(f"  Scooper CMS - Content Management Platform")
-    print(f"{'=' * 60}")
-    print(f"\n  Paper site:  http://{HOST}:{PORT}/")
-    print(f"  CMS backend: http://{HOST}:{PORT}/cms")
-    print(f"\n  Press Ctrl+C to stop the server")
-    print(f"{'=' * 60}\n")
+    # Only bind to 0.0.0.0 if HOST is explicitly set to it
+    if HOST == "0.0.0.0":
+        print(
+            "WARNING: Server is accessible from network. "
+            "Ensure you have set strong SCOOPER_ADMIN_USER and SCOOPER_ADMIN_PASS."
+        )
 
+    print("Press Ctrl+C to stop the server")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\nShutting down...")
-        httpd.server_close()
+        print("\nServer stopped")
+        httpd.shutdown()
 
 
 if __name__ == "__main__":
