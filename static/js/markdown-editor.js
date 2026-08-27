@@ -7,8 +7,11 @@
         console.error('MD Editor: elements not found');
         return;
     }
+    
+    // Create toolbar
     var toolbar = document.createElement('div');
     toolbar.style.cssText = 'margin-bottom:10px;display:flex;gap:5px;flex-wrap:wrap';
+    
     ['B','I','H1','H2','H3','Link','Image','UL','OL','HR'].forEach(function(label) {
         var btn = document.createElement('button');
         btn.textContent = label;
@@ -21,7 +24,19 @@
             var sel = text.substring(start, end);
             var before = text.substring(0, start);
             var after = text.substring(end);
-            var wrap = {'B':'**','I':'*','H1':'# ','H2':'## ','H3':'### ','Link':'[](url)','Image':'![](url)','UL':'- ','OL':'1. ','HR':'---'}[label];
+            var wrapMap = {
+                'B': '**',
+                'I': '*',
+                'H1': '# ',
+                'H2': '## ',
+                'H3': '### ',
+                'Link': '[](url)',
+                'Image': '![](url)',
+                'UL': '- ',
+                'OL': '1. ',
+                'HR': '---'
+            };
+            var wrap = wrapMap[label];
             if (wrap) {
                 var suffix = label === 'HR' ? '' : wrap.split(' ')[0];
                 editor.value = before + wrap + sel + suffix;
@@ -33,13 +48,21 @@
         };
         toolbar.appendChild(btn);
     });
+    
     editor.parentNode.insertBefore(toolbar, editor);
+    
     // Preview styles already set in HTML, just ensure it's visible
     preview.style.display = 'block';
     if (!preview.textContent.trim()) {
         preview.textContent = 'Preview appears here as you type...';
     }
-    if (content && content.value) editor.value = content.value;
+    
+    // Initialize from hidden field
+    if (content && content.value) {
+        editor.value = content.value;
+    }
+    
+    // Live preview with debounce
     var updatePreview = function() {
         var text = editor.value;
         if (content) content.value = text;
@@ -47,7 +70,9 @@
             preview.innerHTML = '<p style="color:var(--cms-text-muted,#888)">Preview appears here as you type...</p>';
             return;
         }
-        var html = text.replace(/
+        // Basic markdown to HTML
+        var html = text
+            .replace(/
 
 /g, '<p></p>')
             .replace(/^#+\s+(.*)$/gm, function(m, p1) {
@@ -63,10 +88,12 @@
 /g, '<br>');
         preview.innerHTML = '<p>' + html + '</p>';
     };
+    
     var timeout;
     editor.addEventListener('input', function() {
         clearTimeout(timeout);
         timeout = setTimeout(updatePreview, 300);
     });
+    
     updatePreview();
 })();
