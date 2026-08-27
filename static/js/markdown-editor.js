@@ -7,7 +7,7 @@
         console.error('MD Editor: elements not found');
         return;
     }
-    
+
     // Create toolbar
     var toolbar = document.createElement('div');
     toolbar.style.cssText = 'margin-bottom:10px;display:flex;gap:5px;flex-wrap:wrap';
@@ -52,18 +52,15 @@
     
     editor.parentNode.insertBefore(toolbar, editor);
     
-    // Preview styles already set in HTML, just ensure it's visible
     preview.style.display = 'block';
     if (!preview.textContent.trim()) {
         preview.textContent = 'Preview appears here as you type...';
     }
     
-    // Initialize from hidden field
     if (content && content.value) {
         editor.value = content.value;
     }
     
-    // Live preview with debounce
     var updatePreview = function() {
         var text = editor.value;
         if (content) content.value = text;
@@ -71,7 +68,6 @@
             preview.innerHTML = '<p style="color:var(--cms-text-muted,#888)">Preview appears here as you type...</p>';
             return;
         }
-        // Basic markdown to HTML
         var html = text
             .replace(/\n\n/g, '<p></p>')
             .replace(/^#+\s+(.*)$/gm, function(m, p1) {
@@ -93,4 +89,4 @@
     });
     
     updatePreview();
-})();
+])();
