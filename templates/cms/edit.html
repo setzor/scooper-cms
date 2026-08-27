@@ -659,6 +659,31 @@
 
         <!-- Performance: Load JavaScript with defer -->
         <script src="/static/js/script.js" defer></script>
-        <script src="/static/js/markdown-editor.js?v=2" defer></script>
+        <script>
+// Inline markdown editor
+document.addEventListener("DOMContentLoaded", function() {
+    var editor = document.getElementById("markdown-editor");
+    var preview = document.getElementById("markdown-preview");
+    if (!editor || !preview) { console.error("Elements not found"); return; }
+    var toolbar = document.createElement("div");
+    toolbar.style.marginBottom = "10px";
+    toolbar.style.display = "flex";
+    toolbar.style.gap = "5px";
+    var btns = ["B","I","H1","H2","H3","Link","Image","UL","OL"];
+    btns.forEach(function(label) {
+        var b = document.createElement("button");
+        b.textContent = label;
+        b.style.padding = "5px 10px";
+        b.style.border = "1px solid #ccc";
+        b.style.cursor = "pointer";
+        toolbar.appendChild(b);
+    });
+    editor.parentNode.insertBefore(toolbar, editor);
+    preview.style.display = "block";
+    preview.style.padding = "10px";
+    preview.style.border = "1px solid #ddd";
+    preview.textContent = "Preview appears here";
+});
+        </script>
     </body>
 </html>
