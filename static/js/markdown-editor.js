@@ -11,6 +11,9 @@
         return;
     }
 
+    // Save original parent
+    var originalParent = editor.parentNode;
+
     // Create container with split layout (editor on left, preview on right)
     var container = document.createElement('div');
     container.style.display = 'flex';
@@ -149,7 +152,7 @@
     // Assemble
     container.appendChild(editorWrap);
     container.appendChild(previewWrap);
-    editor.parentNode.replaceChild(container, editor);
+    originalParent.replaceChild(container, editor);
 
     // Format helper
     function formatText(textarea, prefix, suffix, type) {
