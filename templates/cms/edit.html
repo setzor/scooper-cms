@@ -534,17 +534,16 @@
                             <textarea
                                 id="content"
                                 name="content"
-                                class="markdown-editor-textarea"
                                 style="display: none"
                             >{{ story.content }}</textarea>
                             <textarea
-                                id="editor-content"
+                                id="markdown-editor"
                                 class="markdown-editor-textarea"
                                 style="width: 100%; height: 400px; padding: 10px; border: 1px solid var(--cms-border-color, #ddd); border-radius: 6px 6px 0 0; background: var(--cms-bg, #fff); color: var(--cms-text, #333); font-family: monospace; resize: none;"
                                 placeholder="Write your story in Markdown..."
                             >{{ story.content }}</textarea>
                             <div
-                                id="preview-content"
+                                id="markdown-preview"
                                 class="markdown-preview"
                                 style="display: block; width: 100%; margin-top: 10px;"
                             ></div>

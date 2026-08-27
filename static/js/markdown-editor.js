@@ -4,13 +4,16 @@
  */
 
 class MarkdownEditor {
-    constructor(editorId, previewId, contentId) {
-        this.editor = document.getElementById(editorId);
-        this.preview = document.getElementById(previewId);
-        this.content = document.getElementById(contentId);
+    constructor() {
+        // Find elements by their known IDs
+        this.editor = document.getElementById('markdown-editor');
+        this.preview = document.getElementById('markdown-preview');
+        this.content = document.getElementById('content');
         
         if (!this.editor || !this.preview) {
-            console.error('MarkdownEditor: Could not find editor or preview elements');
+            console.error('MarkdownEditor: Could not find elements');
+            console.error('Editor:', this.editor);
+            console.error('Preview:', this.preview);
             return;
         }
         
@@ -32,11 +35,11 @@ class MarkdownEditor {
         // Sync before form submit
         this.setupFormSync();
         
-        // Load saved draft if exists
-        this.loadDraft();
-        
         // Set up auto-save
         this.setupAutoSave();
+        
+        // Initial render
+        this.renderPreview();
     }
     
     createToolbar() {
@@ -101,6 +104,7 @@ class MarkdownEditor {
     
     styleToolbar(toolbar) {
         const style = document.createElement('style');
+        style.id = 'markdown-toolbar-styles';
         style.textContent = `
             .markdown-toolbar {
                 display: flex;
@@ -122,6 +126,8 @@ class MarkdownEditor {
                 cursor: pointer;
                 font-size: 14px;
                 transition: all 0.2s ease;
+                min-width: 32px;
+                text-align: center;
             }
             
             .markdown-toolbar .toolbar-btn:hover {
@@ -276,9 +282,6 @@ class MarkdownEditor {
         
         this.editor.addEventListener('input', debouncedRender);
         this.editor.addEventListener('change', debouncedRender);
-        
-        // Initial render
-        this.renderPreview();
     }
     
     renderPreview() {
@@ -325,10 +328,11 @@ class MarkdownEditor {
             .markdown-preview {
                 padding: 15px;
                 border: 1px solid var(--cms-border-color, #ddd);
-                border-radius: 0 6px 6px 6px;
+                border-radius: 0 0 6px 6px;
                 background: var(--cms-bg, #fff);
                 color: var(--cms-text, #333);
-                min-height: 500px;
+                min-height: 200px;
+                max-height: 500px;
                 overflow-y: auto;
             }
             
@@ -440,7 +444,8 @@ class MarkdownEditor {
     }
     
     setupAutoSave() {
-        const draftKey = 'scooper-md-draft-' + (this.content ? this.content.id : 'new');
+        const form = this.editor.closest('form');
+        const draftKey = form ? 'scooper-md-draft-' + (form.id || 'new') : 'scooper-md-draft-new';
         
         // Save every 30 seconds
         setInterval(() => {
@@ -469,37 +474,20 @@ class MarkdownEditor {
             }
         }
     }
-    
-    loadDraft() {
-        // Draft loading is now handled in setupAutoSave
-    }
 }
 
-// Initialize editors when DOM is ready
+// Initialize editor when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     // Load marked.js for markdown rendering
     const markedScript = document.createElement('script');
     markedScript.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
     markedScript.onload = () => {
-        // Initialize all markdown editors on the page
-        const editors = document.querySelectorAll('.markdown-editor-textarea');
-        editors.forEach(editor => {
-            const editorId = editor.id;
-            const previewId = editorId.replace('editor-', 'preview-');
-            const contentId = editorId.replace('editor-', 'content-');
-            new MarkdownEditor(editorId, previewId, contentId);
-        });
+        console.log('marked.js loaded, initializing editor');
+        new MarkdownEditor();
     };
     markedScript.onerror = () => {
         console.log('marked.js failed to load, using fallback renderer');
-        // Initialize with fallback
-        const editors = document.querySelectorAll('.markdown-editor-textarea');
-        editors.forEach(editor => {
-            const editorId = editor.id;
-            const previewId = editorId.replace('editor-', 'preview-');
-            const contentId = editorId.replace('editor-', 'content-');
-            new MarkdownEditor(editorId, previewId, contentId);
-        });
+        new MarkdownEditor();
     };
     document.head.appendChild(markedScript);
 });
