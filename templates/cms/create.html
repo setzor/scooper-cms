@@ -107,13 +107,7 @@
             <link rel="stylesheet" href="/static/css/style.css" />
         </noscript>
 
-        <!-- Quill Rich Text Editor - Open Source, MIT License, No Ads -->
-        <link
-            href="https://cdn.quilljs.com/1.3.7/quill.snow.css"
-            rel="stylesheet"
-        />
-        <!-- Performance: Load Quill JS with async -->
-        <script src="https://cdn.quilljs.com/1.3.7/quill.min.js" async></script>
+
     </head>
     <body class="theme-{{ theme }} cms-theme">
         <!-- Mobile Sidebar Overlay -->
@@ -264,15 +258,22 @@
                             <textarea
                                 id="content"
                                 name="content"
+                                class="markdown-editor-textarea"
                                 style="display: none"
                             ></textarea>
+                            <textarea
+                                id="editor-content"
+                                class="markdown-editor-textarea"
+                                style="width: 100%; height: 400px; padding: 10px; border: 1px solid var(--cms-border-color, #ddd); border-radius: 6px 6px 0 0; background: var(--cms-bg, #fff); color: var(--cms-text, #333); font-family: monospace; resize: none;"
+                                placeholder="Write your story in Markdown..."
+                            ></textarea>
                             <div
-                                id="quill-editor"
-                                style="height: 500px; margin-bottom: 10px"
+                                id="preview-content"
+                                class="markdown-preview"
+                                style="display: block; width: 100%; margin-top: 10px;"
                             ></div>
                             <p class="hint">
-                                Rich text editor with support for images,
-                                formatting, lists, and more.
+                                Markdown editor with live preview. Use the toolbar for formatting.
                             </p>
                         </div>
 
@@ -341,183 +342,10 @@
         </div>
 
         <!-- Performance: Load JavaScript with defer -->
-        <script src="/static/js/script.js" defer></script>
+        <script src="/static/js/script.js" defer>
+                <!-- Markdown Editor -->
+        <script src="/static/js/markdown-editor.js" defer></script></script>
         <script>
-            // Initialize Quill Editor
-            document.addEventListener("DOMContentLoaded", function () {
-                var quill = new Quill("#quill-editor", {
-                    theme: "snow",
-                    placeholder: "Write your story here...",
-                    modules: {
-                        toolbar: [
-                            [{ header: [1, 2, 3, 4, 5, 6, false] }],
-                            ["bold", "italic", "underline", "strike"],
-                            ["blockquote", "code-block"],
-                            [{ list: "ordered" }, { list: "bullet" }],
-                            [{ script: "sub" }, { script: "super" }],
-                            [{ indent: "-1" }, { indent: "+1" }],
-                            [{ direction: "rtl" }],
-                            [{ size: ["small", false, "large", "huge"] }],
-                            [{ color: [] }, { background: [] }],
-                            [{ font: [] }],
-                            [{ align: [] }],
-                            ["link", "image", "video"],
-                            ["clean"],
-                        ],
-                    },
-                });
-
-                // Sync Quill content to hidden textarea before form submission
-                var form = document.querySelector("form");
-                if (form) {
-                    form.addEventListener("submit", function () {
-                        document.getElementById("content").value =
-                            quill.root.innerHTML;
-                    });
-                }
-
-                // Handle image uploads
-                quill.getModule("toolbar").addHandler("image", function () {
-                    var input = document.createElement("input");
-                    input.setAttribute("type", "file");
-                    input.setAttribute("accept", "image/*");
-                    input.onchange = function () {
-                        var file = this.files[0];
-                        if (file) {
-                            var reader = new FileReader();
-                            reader.onload = function (e) {
-                                var range = quill.getSelection();
-                                quill.insertEmbed(
-                                    range.index,
-                                    "image",
-                                    e.target.result,
-                                );
-                            };
-                            reader.readAsDataURL(file);
-                        }
-                    };
-                    input.click();
-                });
-            });
-
-            // ==========================================================================
-            // Auto-save draft to localStorage
-            // ==========================================================================
-            (function () {
-                var draftKey = "scooper-draft-new";
-                var saveInterval = 30000; // 30 seconds
-                var saveTimeout;
-
-                // Get all form data as an object
-                function getFormData() {
-                    var quill = window.quill;
-                    return {
-                        title: document.getElementById("title").value,
-                        excerpt: document.getElementById("excerpt").value,
-                        content: quill
-                            ? quill.root.innerHTML
-                            : document.getElementById("content").value,
-                        author: document.getElementById("author").value,
-                        category: document.getElementById("category").value,
-                        published: document.querySelector(
-                            'input[name="published"]',
-                        ).checked,
-                    };
-                }
-
-                // Save draft to localStorage
-                function saveDraft() {
-                    var data = getFormData();
-                    // Only save if title is not empty (basic validation)
-                    if (data.title && data.title.trim()) {
-                        localStorage.setItem(
-                            draftKey,
-                            JSON.stringify({
-                                data: data,
-                                timestamp: Date.now(),
-                            }),
-                        );
-                        console.log(
-                            "Draft saved at",
-                            new Date().toLocaleTimeString(),
-                        );
-                    }
-                }
-
-                // Load draft from localStorage
-                function loadDraft() {
-                    var saved = localStorage.getItem(draftKey);
-                    if (!saved) return;
-
-                    try {
-                        var draft = JSON.parse(saved);
-                        var data = draft.data;
-
-                        // Always ask before restoring on create page
-                        if (
-                            confirm(
-                                "We found a draft story from " +
-                                    new Date(draft.timestamp).toLocaleString() +
-                                    ". Restore it?",
-                            )
-                        ) {
-                            document.getElementById("title").value =
-                                data.title || "";
-                            document.getElementById("excerpt").value =
-                                data.excerpt || "";
-                            if (window.quill) {
-                                window.quill.clipboard.dangerouslyPasteHTML(
-                                    data.content || "",
-                                );
-                            } else {
-                                document.getElementById("content").value =
-                                    data.content || "";
-                            }
-                            document.getElementById("author").value =
-                                data.author || "";
-                            document.getElementById("category").value =
-                                data.category || "";
-                            if (data.published !== undefined) {
-                                document.querySelector(
-                                    'input[name="published"]',
-                                ).checked = data.published;
-                            }
-                        } else {
-                            // User declined, clear the draft
-                            localStorage.removeItem(draftKey);
-                        }
-                    } catch (e) {
-                        console.error("Error loading draft:", e);
-                    }
-                }
-
-                // Start auto-save
-                function startAutoSave() {
-                    saveDraft();
-                    saveTimeout = setInterval(saveDraft, saveInterval);
-                }
-
-                // Stop auto-save
-                function stopAutoSave() {
-                    if (saveTimeout) {
-                        clearInterval(saveTimeout);
-                        saveTimeout = null;
-                    }
-                }
-
-                // Clear draft on successful submission
-                var form = document.querySelector("form");
-                if (form) {
-                    form.addEventListener("submit", function () {
-                        stopAutoSave();
-                        localStorage.removeItem(draftKey);
-                    });
-                }
-
-                // Initialize
-                loadDraft();
-                startAutoSave();
-            })();
-        </script>
+            </script>
     </body>
 </html>
