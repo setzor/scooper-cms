@@ -202,7 +202,7 @@ def validate_csrf_token(request_cookie_token, request_form_token):
 
 def get_theme_icon(theme):
     """Get the appropriate icon for a theme (sun for light, moon for dark)."""
-    light_themes = ["light", "rose-pine-dawn", "catpuccin-latte"]
+    light_themes = ["light", "rose-pine-dawn", "catpuccin-latte", "glass"]
     icon = "&#127774;" if theme in light_themes else "&#127771;"
     return SafeString(icon)
 
@@ -260,7 +260,7 @@ def init_db():
         "INSERT OR IGNORE INTO settings (key, value) VALUES ('site_description', 'Your News, Delivered')"
     )
     cursor.execute(
-        "INSERT OR IGNORE INTO settings (key, value) VALUES ('theme', 'light')"
+        "INSERT OR IGNORE INTO settings (key, value) VALUES ('theme', 'glass')"
     )
 
     conn.commit()

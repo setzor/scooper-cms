@@ -2230,3 +2230,517 @@ img[src=""] {
 [data-theme="catpuccin-mocha"] .theme-preview {
     border-color: var(--cms-border, #313244);
 }
+/* ==========================================================================
+   GLASS THEME ADDITIONS - Modern Glass Morphism
+   This file contains the glass theme CSS that gets appended to style.css
+   ========================================================================== */
+
+/* ==========================================================================
+   GLASS THEME (Modern Glass Morphism)
+   ========================================================================== */
+
+[data-theme="glass"] {
+    --theme: glass;
+
+    /* Glass effect colors - Light variant with transparency */
+    --paper-bg: rgba(248, 248, 250, 0.95);
+    --paper-text: #1a1a2e;
+    --paper-text-secondary: #4a4a6a;
+    --paper-text-muted: #7a7a9a;
+    --paper-header-bg: rgba(255, 255, 255, 0.95);
+    --paper-header-border: rgba(200, 200, 220, 0.4);
+    --paper-footer-bg: rgba(20, 20, 40, 0.95);
+    --paper-footer-text: #c8c8e8;
+    --paper-card-bg: rgba(255, 255, 255, 0.85);
+    --paper-card-border: rgba(200, 200, 220, 0.5);
+    --paper-link-color: #0095ff;
+    --paper-link-hover: #0066cc;
+    --paper-category-bg: rgba(200, 200, 220, 0.4);
+    --paper-category-text: #5a5a7a;
+
+    /* CMS - Glass effect */
+    --cms-sidebar-bg: rgba(30, 30, 50, 0.95);
+    --cms-sidebar-text: #d8d8f8;
+    --cms-sidebar-hover: rgba(40, 40, 60, 0.9);
+    --cms-sidebar-active: #0095ff;
+    --cms-main-bg: rgba(248, 248, 250, 0.4);
+    --cms-header-bg: rgba(255, 255, 255, 0.95);
+    --cms-header-text: #1a1a2e;
+    --cms-card-bg: rgba(255, 255, 255, 0.8);
+    --cms-border: rgba(200, 200, 220, 0.5);
+    --cms-text: #1a1a2e;
+    --cms-text-secondary: #5a5a7a;
+
+    /* Form elements - Glass */
+    --form-input-bg: rgba(255, 255, 255, 0.7);
+    --form-input-border: rgba(200, 200, 220, 0.6);
+    --form-input-text: #1a1a2e;
+    --form-label: #3a3a5a;
+
+    /* Buttons - Glass */
+    --btn-primary-bg: #0095ff;
+    --btn-primary-text: #ffffff;
+    --btn-primary-hover: #007acc;
+    --btn-secondary-bg: rgba(255, 255, 255, 0.5);
+    --btn-secondary-text: #3a3a5a;
+    --btn-danger-bg: #ff4757;
+    --btn-danger-text: #ffffff;
+    --btn-danger-hover: #e84118;
+
+    /* Enhanced shadows for glass effect */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
+}
+
+/* Glass Dark theme */
+[data-theme="glass-dark"] {
+    --theme: glass-dark;
+
+    /* Glass effect colors - Dark variant */
+    --paper-bg: rgba(10, 10, 20, 0.9);
+    --paper-text: #e8e8f8;
+    --paper-text-secondary: #b8b8d8;
+    --paper-text-muted: #8888a8;
+    --paper-header-bg: rgba(20, 20, 40, 0.95);
+    --paper-header-border: rgba(60, 60, 80, 0.5);
+    --paper-footer-bg: rgba(10, 10, 20, 0.98);
+    --paper-footer-text: #a8a8c8;
+    --paper-card-bg: rgba(20, 20, 40, 0.85);
+    --paper-card-border: rgba(60, 60, 80, 0.6);
+    --paper-link-color: #4dabf7;
+    --paper-link-hover: #6fc2ff;
+    --paper-category-bg: rgba(40, 40, 60, 0.6);
+    --paper-category-text: #b8b8d8;
+
+    /* CMS - Glass Dark */
+    --cms-sidebar-bg: rgba(15, 15, 25, 0.98);
+    --cms-sidebar-text: #d8d8f8;
+    --cms-sidebar-hover: rgba(25, 25, 35, 0.95);
+    --cms-sidebar-active: #4dabf7;
+    --cms-main-bg: rgba(10, 10, 20, 0.5);
+    --cms-header-bg: rgba(20, 20, 40, 0.95);
+    --cms-header-text: #e8e8f8;
+    --cms-card-bg: rgba(20, 20, 40, 0.8);
+    --cms-border: rgba(60, 60, 80, 0.6);
+    --cms-text: #e8e8f8;
+    --cms-text-secondary: #b8b8d8;
+
+    /* Form elements - Glass Dark */
+    --form-input-bg: rgba(20, 20, 40, 0.7);
+    --form-input-border: rgba(60, 60, 80, 0.7);
+    --form-input-text: #e8e8f8;
+    --form-label: #c8c8e8;
+
+    /* Buttons - Glass Dark */
+    --btn-primary-bg: #4dabf7;
+    --btn-primary-text: #0a0a14;
+    --btn-primary-hover: #3a8fe8;
+    --btn-secondary-bg: rgba(40, 40, 60, 0.7);
+    --btn-secondary-text: #d8d8f8;
+    --btn-danger-bg: #ff4757;
+    --btn-danger-text: #ffffff;
+    --btn-danger-hover: #e84118;
+
+    /* Enhanced shadows for glass effect */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* ==========================================================================
+   Glass Theme Background Effects
+   ========================================================================== */
+
+[data-theme="glass"] body {
+    background-image: 
+        radial-gradient(ellipse at 20% 20%, rgba(0, 149, 255, 0.05) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(147, 51, 234, 0.05) 0%, transparent 50%);
+}
+
+[data-theme="glass-dark"] body {
+    background-image: 
+        radial-gradient(ellipse at 20% 20%, rgba(77, 171, 247, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(162, 28, 175, 0.08) 0%, transparent 50%);
+}
+
+/* ==========================================================================
+   Glass Effect Enhancements - Uses -webkit-backdrop-filter for broader support
+   ========================================================================== */
+
+/* Paper Header - Glass effect */
+.paper-header {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* Paper Footer - Glass effect */
+.paper-footer {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* Story Cards - Glass effect */
+.story-card {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Single Story - Glass effect */
+.single-story {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 16px;
+}
+
+/* CMS Sidebar - Glass effect */
+.cms-sidebar {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* CMS Header - Glass effect */
+.cms-header {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* Dashboard Cards - Glass effect */
+.dashboard-card {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Form Cards - Glass effect */
+.story-form,
+.settings-form {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 12px;
+}
+
+/* Table Container - Glass effect */
+.table-container {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 12px;
+}
+
+/* Empty State - Glass effect */
+.empty-state {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 12px;
+}
+
+/* ==========================================================================
+   Glass Theme Specific Styling
+   ========================================================================== */
+
+/* Glass theme card borders */
+[data-theme="glass"] .story-card,
+[data-theme="glass-dark"] .story-card {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="glass"] .single-story,
+[data-theme="glass-dark"] .single-story {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="glass"] .dashboard-card,
+[data-theme="glass-dark"] .dashboard-card {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="glass"] .table-container,
+[data-theme="glass-dark"] .table-container {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="glass"] .story-form,
+[data-theme="glass"] .settings-form,
+[data-theme="glass-dark"] .story-form,
+[data-theme="glass-dark"] .settings-form {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* ==========================================================================
+   Enhanced Button Styles
+   ========================================================================== */
+
+.btn {
+    border-radius: 8px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn-primary {
+    box-shadow: 0 4px 15px rgba(0, 149, 255, 0.2);
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 149, 255, 0.3);
+}
+
+.btn-secondary {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid var(--cms-border);
+}
+
+.btn-secondary:hover {
+    border-color: var(--paper-link-color);
+}
+
+.btn-danger {
+    box-shadow: 0 4px 15px rgba(255, 71, 87, 0.2);
+}
+
+.btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255, 71, 87, 0.3);
+}
+
+/* ==========================================================================
+   Modern Card Styling
+   ========================================================================== */
+
+.story-card {
+    border-radius: 12px;
+    min-height: 400px;
+}
+
+.story-card:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--paper-link-color);
+}
+
+[data-theme="glass"] .story-card:hover,
+[data-theme="glass-dark"] .story-card:hover {
+    box-shadow: 0 8px 32px rgba(0, 149, 255, 0.15);
+}
+
+.single-story {
+    border-radius: 16px;
+}
+
+.dashboard-card {
+    border-radius: 12px;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+[data-theme="glass"] .dashboard-card,
+[data-theme="glass-dark"] .dashboard-card {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.story-form,
+.settings-form {
+    border-radius: 12px;
+}
+
+.table-container {
+    border-radius: 12px;
+}
+
+.empty-state {
+    border-radius: 12px;
+    background-color: var(--cms-card-bg);
+    border: 1px solid var(--cms-border);
+}
+
+/* ==========================================================================
+   Category Tags - More Modern
+   ========================================================================== */
+
+.category-tag {
+    border-radius: 20px;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+}
+
+/* ==========================================================================
+   Status Badges - More Modern
+   ========================================================================== */
+
+.status-badge,
+.story-status {
+    border-radius: 20px;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* ==========================================================================
+   CMS Main Background
+   ========================================================================== */
+
+.cms-main {
+    background: 
+        radial-gradient(ellipse at 20% 20%, rgba(0, 149, 255, 0.03) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(147, 51, 234, 0.03) 0%, transparent 50%);
+}
+
+/* ==========================================================================
+   Animations
+   ========================================================================== */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+@keyframes glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(0, 149, 255, 0.2); }
+    50% { box-shadow: 0 0 30px rgba(0, 149, 255, 0.3); }
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.story-card {
+    animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.story-card:nth-child(1) { animation-delay: 0.1s; }
+.story-card:nth-child(2) { animation-delay: 0.2s; }
+.story-card:nth-child(3) { animation-delay: 0.3s; }
+.story-card:nth-child(4) { animation-delay: 0.4s; }
+.story-card:nth-child(5) { animation-delay: 0.5s; }
+.story-card:nth-child(6) { animation-delay: 0.6s; }
+
+/* Glass theme floating animation */
+[data-theme="glass"] .story-card,
+[data-theme="glass-dark"] .story-card {
+    animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards, float 6s ease-in-out infinite;
+}
+
+.btn-primary:hover {
+    animation: glow 1.5s ease-in-out infinite;
+}
+
+/* Loading shimmer effect */
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--cms-border) 25%,
+        var(--cms-main-bg) 50%,
+        var(--cms-border) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+/* ==========================================================================
+   Utility Classes
+   ========================================================================== */
+
+/* Glass effect utilities */
+.glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+}
+
+.glass-dark {
+    background: rgba(20, 20, 40, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+}
+
+/* Gradient text utilities */
+.gradient-text {
+    background: linear-gradient(135deg, #0095ff, #9333ea);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.gradient-text-purple {
+    background: linear-gradient(135deg, #9333ea, #0095ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Modern spacing utilities */
+.mt-5 { margin-top: 3rem; }
+.mb-5 { margin-bottom: 3rem; }
+.py-1 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.py-2 { padding-top: 1rem; padding-bottom: 1rem; }
+.py-3 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.px-1 { padding-left: 0.5rem; padding-right: 0.5rem; }
+.px-2 { padding-left: 1rem; padding-right: 1rem; }
+.px-3 { padding-left: 1.5rem; padding-right: 1.5rem; }
+
+/* Modern font size utilities */
+.text-xs { font-size: 0.75rem; }
+.text-sm { font-size: 0.875rem; }
+.text-base { font-size: 1rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.25rem; }
+.text-2xl { font-size: 1.5rem; }
+.text-3xl { font-size: 2rem; }
+
+/* Font weight utilities */
+.font-light { font-weight: 300; }
+.font-normal { font-weight: 400; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+/* Opacity utilities */
+.opacity-50 { opacity: 0.5; }
+.opacity-75 { opacity: 0.75; }
+.opacity-90 { opacity: 0.9; }
+
+/* Modern rounded corners */
+.rounded-sm { border-radius: 4px; }
+.rounded { border-radius: 8px; }
+.rounded-lg { border-radius: 12px; }
+.rounded-xl { border-radius: 16px; }
+.rounded-full { border-radius: 9999px; }
