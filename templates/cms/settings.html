@@ -357,6 +357,30 @@
                                         >
                                             Catpuccin Mocha
                                         </option>
+                                        <option
+                                            value="glass"
+                                            {%
+                                            if
+                                            theme=""""
+                                            ="glass"
+                                            %}selected{%
+                                            endif
+                                            %}
+                                        >
+                                            Glass Light
+                                        </option>
+                                        <option
+                                            value="glass-dark"
+                                            {%
+                                            if
+                                            theme=""""
+                                            ="glass-dark"
+                                            %}selected{%
+                                            endif
+                                            %}
+                                        >
+                                            Glass Dark
+                                        </option>
                                     </select>
                                     <div
                                         id="theme-preview"
@@ -598,6 +622,20 @@
                         footer: "#11111b",
                         btn: "#88c0d0",
                         accent: "#f5e0dc",
+                    },
+                    glass: {
+                        header: "rgba(255, 255, 255, 0.9)",
+                        body: "rgba(245, 245, 250, 0.3)",
+                        footer: "rgba(20, 20, 40, 0.9)",
+                        btn: "#0095ff",
+                        accent: "#9333ea",
+                    },
+                    "glass-dark": {
+                        header: "rgba(20, 20, 40, 0.9)",
+                        body: "rgba(10, 10, 20, 0.4)",
+                        footer: "rgba(10, 10, 20, 0.95)",
+                        btn: "#4dabf7",
+                        accent: "#a21caf",
                     },
                 };
 
