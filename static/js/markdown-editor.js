@@ -1,4 +1,4 @@
-/* Modern Markdown Editor - Split layout with toggleable preview */
+/* Modern Markdown Editor - Split layout with toggleable and resizable preview */
 (function() {
     'use strict';
 
@@ -23,13 +23,17 @@
     container.style.overflow = 'hidden';
     container.style.backgroundColor = 'var(--cms-bg, #fff)';
     container.style.position = 'relative';
+    container.style.width = '100%';
+    container.style.height = 'auto';
+    container.style.minHeight = '450px';
 
     // Editor wrapper (left side)
     var editorWrap = document.createElement('div');
-    editorWrap.style.flex = '1';
+    editorWrap.style.flex = '1 1 60%';
     editorWrap.style.minWidth = '0';
     editorWrap.style.display = 'flex';
     editorWrap.style.flexDirection = 'column';
+    editorWrap.style.height = '100%';
 
     // Create toolbar
     var toolbar = document.createElement('div');
@@ -78,40 +82,55 @@
 
     // Preview wrapper (right side)
     var previewWrap = document.createElement('div');
-    previewWrap.style.flex = '1';
+    previewWrap.style.flex = '1 1 40%';
     previewWrap.style.minWidth = '0';
-    previewWrap.style.maxWidth = '400px';
+    previewWrap.style.maxWidth = '50%';
     previewWrap.style.padding = '12px';
     previewWrap.style.overflowY = 'auto';
     previewWrap.style.backgroundColor = 'var(--cms-bg-secondary, #f8f9fa)';
-    previewWrap.style.display = 'block';
+    previewWrap.style.display = 'flex';
+    previewWrap.style.flexDirection = 'column';
     previewWrap.style.position = 'relative';
 
-    // Toggle button
+    // Toggle button - placed inside preview wrap
     var toggleBtn = document.createElement('button');
-    toggleBtn.innerHTML = 'Preview';
+    toggleBtn.innerHTML = 'Hide Preview';
     toggleBtn.title = 'Toggle Preview';
-    toggleBtn.style.position = 'absolute';
-    toggleBtn.style.top = '4px';
-    toggleBtn.style.right = '4px';
+    toggleBtn.style.alignSelf = 'flex-end';
+    toggleBtn.style.marginBottom = '8px';
     toggleBtn.style.background = 'var(--cms-bg, #fff)';
     toggleBtn.style.border = '1px solid var(--cms-border-color, #e0e0e0)';
     toggleBtn.style.borderRadius = '4px';
     toggleBtn.style.padding = '4px 8px';
     toggleBtn.style.cursor = 'pointer';
     toggleBtn.style.fontSize = '11px';
-    toggleBtn.style.zIndex = '10';
     toggleBtn.onclick = function() {
-        if (previewWrap.style.display === 'none') {
-            previewWrap.style.display = 'block';
-            toggleBtn.innerHTML = 'Preview';
+        if (previewWrap.style.flex === '0 0 0px' || previewWrap.style.display === 'none') {
+            previewWrap.style.flex = '1 1 40%';
+            previewWrap.style.minWidth = '0';
+            previewWrap.style.display = 'flex';
+            toggleBtn.innerHTML = 'Hide Preview';
+            resizeHandle.style.display = 'block';
         } else {
+            previewWrap.style.flex = '0 0 0px';
+            previewWrap.style.minWidth = '0';
             previewWrap.style.display = 'none';
-            toggleBtn.innerHTML = 'Show';
+            toggleBtn.innerHTML = 'Show Preview';
+            resizeHandle.style.display = 'none';
         }
     };
     previewWrap.appendChild(toggleBtn);
     previewWrap.appendChild(preview);
+
+    // Resize handle
+    var resizeHandle = document.createElement('div');
+    resizeHandle.style.width = '8px';
+    resizeHandle.style.backgroundColor = 'var(--cms-border-color, #e0e0e0)';
+    resizeHandle.style.cursor = 'col-resize';
+    resizeHandle.style.display = 'block';
+    resizeHandle.style.transition = 'background-color 0.15s ease';
+    resizeHandle.onmouseenter = function() { this.style.backgroundColor = 'var(--cms-text-muted, #888)'; };
+    resizeHandle.onmouseleave = function() { this.style.backgroundColor = 'var(--cms-border-color, #e0e0e0)'; };
 
     // Style editor
     editor.style.flex = '1';
@@ -125,14 +144,17 @@
     editor.style.minHeight = '400px';
     editor.style.backgroundColor = 'transparent';
     editor.style.color = 'var(--cms-text, #333)';
+    editor.style.overflowY = 'auto';
 
     // Style preview
+    preview.style.flex = '1';
     preview.style.padding = '0';
     preview.style.minHeight = '100%';
     preview.style.color = 'var(--cms-text, #333)';
     preview.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     preview.style.fontSize = '14px';
     preview.style.lineHeight = '1.6';
+    preview.style.overflowY = 'auto';
 
     if (!preview.textContent.trim()) {
         preview.innerHTML = '<p style="color:var(--cms-text-muted,#888);font-style:italic;">Preview appears here...</p>';
@@ -142,14 +164,226 @@
         editor.value = contentField.value;
     }
 
-    // CORRECT ORDER: Build container, replace editor, then move editor into place
-    // 1. Build container with editorWrap and previewWrap (editor NOT in editorWrap yet)
+    // Build container structure: editorWrap, resizeHandle, previewWrap
     container.appendChild(editorWrap);
+    container.appendChild(resizeHandle);
     container.appendChild(previewWrap);
-    // 2. Replace editor with container in original parent
     originalParent.replaceChild(container, editor);
-    // 3. NOW move editor into editorWrap (editor is now inside container via editorWrap)
     editorWrap.appendChild(editor);
+
+    // Make panes resizable
+    var isResizing = false;
+    var startX, startWidths;
+
+    resizeHandle.addEventListener('mousedown', function(e) {
+        isResizing = true;
+        startX = e.clientX;
+        startWidths = {
+            editor: editorWrap.offsetWidth,
+            preview: previewWrap.offsetWidth
+        };
+        e.preventDefault();
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!isResizing) return;
+        var dx = e.clientX - startX;
+        var containerWidth = container.offsetWidth - resizeHandle.offsetWidth;
+        var newEditorWidth = startWidths.editor + dx;
+        var newPreviewWidth = startWidths.preview - dx;
+
+        // Constrain widths to reasonable minimum
+        var minWidth = 150;
+        if (newEditorWidth < minWidth) {
+            newEditorWidth = minWidth;
+            newPreviewWidth = containerWidth - minWidth;
+        }
+        if (newPreviewWidth < minWidth) {
+            newPreviewWidth = minWidth;
+            newEditorWidth = containerWidth - minWidth;
+        }
+
+        editorWrap.style.flex = 'none';
+        editorWrap.style.width = newEditorWidth + 'px';
+        previewWrap.style.flex = 'none';
+        previewWrap.style.width = newPreviewWidth + 'px';
+    });
+
+    document.addEventListener('mouseup', function() {
+        if (isResizing) {
+            isResizing = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        }
+    });
+
+    // Escape HTML special characters
+    function escapeHtml(text) {
+        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // Parse inline markdown (bold, italic, links, images)
+    function parseInline(text) {
+        var result = escapeHtml(text);
+        result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        result = result.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        result = result.replace(/`(.+?)`/g, '<code>$1</code>');
+        result = result.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2">$1</a>');
+        result = result.replace(/!\[([^\]]+)\]\(([^\)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;">');
+        return result;
+    }
+
+    // Markdown to HTML
+    function markdownToHtml(text) {
+        if (!text.trim()) {
+            return '<p style="color:var(--cms-text-muted,#888);font-style:italic;">Preview appears here...</p>';
+        }
+
+        var lines = text.split('\n');
+        var html = '';
+        var inList = false;
+        var inBlockquote = false;
+        var inCodeBlock = false;
+        var codeContent = '';
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+
+            if (inCodeBlock) {
+                if (line.match(/```/)) {
+                    html += '<pre style="background:#f5f5f5;padding:12px;border-radius:4px;overflow-x:auto;"><code>' + codeContent + '</code></pre>';
+                    inCodeBlock = false;
+                    codeContent = '';
+                } else {
+                    codeContent += line + '\n';
+                }
+                continue;
+            }
+
+            if (line.trim() === '') {
+                if (inList) {
+                    html += '</ul>';
+                    inList = false;
+                }
+                if (inBlockquote) {
+                    html += '</blockquote>';
+                    inBlockquote = false;
+                }
+                html += '<p><br></p>';
+                continue;
+            }
+
+            var hMatch = line.match(/^(#+)\s+(.*)/);
+            if (hMatch) {
+                if (inList) {
+                    html += '</ul>';
+                    inList = false;
+                }
+                if (inBlockquote) {
+                    html += '</blockquote>';
+                    inBlockquote = false;
+                }
+                html += '<h' + hMatch[1].length + '>' + parseInline(hMatch[2]) + '</h' + hMatch[1].length + '>';
+                continue;
+            }
+
+            if (line.match(/^>\s+/)) {
+                if (!inBlockquote) {
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    html += '<blockquote>';
+                    inBlockquote = true;
+                }
+                html += '<p>' + parseInline(line.substring(2).trim()) + '</p>';
+                continue;
+            }
+            if (inBlockquote) {
+                html += '</blockquote>';
+                inBlockquote = false;
+            }
+
+            if (line.match(/^---+$/)) {
+                if (inList) {
+                    html += '</ul>';
+                    inList = false;
+                }
+                html += '<hr style="border:0;border-top:1px solid var(--cms-border-color,#e0e0e0);margin:12px 0;">';
+                continue;
+            }
+
+            var listMatch = line.match(/^\s*[-*+]\s+(.*)/);
+            var olMatch = line.match(/^\s*\d+\.\s+(.*)/);
+            if (listMatch || olMatch) {
+                if (!inList) {
+                    if (inBlockquote) {
+                        html += '</blockquote>';
+                        inBlockquote = false;
+                    }
+                    html += '<ul>';
+                    inList = true;
+                }
+                html += '<li>' + parseInline(listMatch ? listMatch[1] : olMatch[1]) + '</li>';
+                continue;
+            }
+            if (inList) {
+                html += '</ul>';
+                inList = false;
+            }
+
+            var codeMatch = line.match(/^\s*```(\w*)/);
+            if (codeMatch) {
+                inCodeBlock = true;
+                codeContent = '';
+                continue;
+            }
+
+            if (inList) {
+                html += '</ul>';
+                inList = false;
+            }
+
+            html += '<p>' + parseInline(line) + '</p>';
+        }
+
+        if (inCodeBlock) {
+            html += '<pre style="background:#f5f5f5;padding:12px;border-radius:4px;overflow-x:auto;"><code>' + escapeHtml(codeContent) + '</code></pre>';
+        }
+        if (inList) html += '</ul>';
+        if (inBlockquote) html += '</blockquote>';
+
+        return html;
+    }
+
+    var previewTimeout;
+    function updatePreview() {
+        clearTimeout(previewTimeout);
+        previewTimeout = setTimeout(function() {
+            preview.innerHTML = markdownToHtml(editor.value);
+        }, 300);
+    }
+
+    editor.addEventListener('input', function() {
+        if (contentField) contentField.value = editor.value;
+        updatePreview();
+    });
+
+    // Initial preview update
+    updatePreview();
+
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+            e.preventDefault();
+            formatText(editor, '**', '**', 'inline');
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+            e.preventDefault();
+            formatText(editor, '*', '*', 'inline');
+        }
+    });
 
     // Format helper
     function formatText(textarea, prefix, suffix, type) {
@@ -184,91 +418,4 @@
         if (contentField) contentField.value = textarea.value;
         updatePreview();
     }
-
-    // Markdown to HTML
-    function markdownToHtml(text) {
-        if (!text.trim()) {
-            return '<p style="color:var(--cms-text-muted,#888);font-style:italic;">Preview appears here...</p>';
-        }
-
-        var lines = text.split('\n');
-        var html = '';
-
-        for (var i = 0; i < lines.length; i++) {
-            var line = lines[i];
-
-            if (line.trim() === '') {
-                html += '<p><br></p>';
-                continue;
-            }
-
-            var hMatch = line.match(/^(#+)\s+(.*)/);
-            if (hMatch) {
-                html += '<h' + hMatch[1].length + '>' + hMatch[2] + '</h' + hMatch[1].length + '>';
-                continue;
-            }
-
-            if (line.match(/^>\s+/)) {
-                html += '<blockquote>' + line.substring(2).trim() + '</blockquote>';
-                continue;
-            }
-
-            if (line.match(/^---+$/)) {
-                html += '<hr style="border:0;border-top:1px solid var(--cms-border-color,#e0e0e0);margin:12px 0;">';
-                continue;
-            }
-
-            var listMatch = line.match(/^\s*[-*+]\s+(.*)/);
-            if (listMatch) {
-                html += '<li>' + listMatch[1] + '</li>';
-                continue;
-            }
-            var olMatch = line.match(/^\s*\d+\.\s+(.*)/);
-            if (olMatch) {
-                html += '<li>' + olMatch[1] + '</li>';
-                continue;
-            }
-
-            if (line.match(/^\s*```/)) {
-                var codeLines = [line];
-                for (var j = i + 1; j < lines.length; j++) {
-                    codeLines.push(lines[j]);
-                    if (lines[j].match(/```/)) break;
-                }
-                html += '<pre style="background:#f5f5f5;padding:12px;border-radius:4px;overflow-x:auto;"><code>' + codeLines.join('\n') + '</code></pre>';
-                i = j;
-                continue;
-            }
-
-            html += '<p>' + line + '</p>';
-        }
-
-        return html;
-    }
-
-    var previewTimeout;
-    function updatePreview() {
-        clearTimeout(previewTimeout);
-        previewTimeout = setTimeout(function() {
-            preview.innerHTML = markdownToHtml(editor.value);
-        }, 300);
-    }
-
-    editor.addEventListener('input', function() {
-        if (contentField) contentField.value = editor.value;
-        updatePreview();
-    });
-
-    updatePreview();
-
-    document.addEventListener('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-            e.preventDefault();
-            formatText(editor, '**', '**', 'inline');
-        }
-        if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
-            e.preventDefault();
-            formatText(editor, '*', '*', 'inline');
-        }
-    });
 })();
