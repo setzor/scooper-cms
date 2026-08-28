@@ -1,4 +1,4 @@
-<!doctype html>
+ype html>
 <html lang="en" data-theme="{{ theme }}" data-font="{{ font_family }}">
     <head>
         <meta charset="UTF-8" />
@@ -263,162 +263,20 @@
                                 name="content"
                                 style="display: none"
                             >
-{{ story.content }}</textarea
-                            >
+{{ story.content }}</textarea>
+                            <textarea
+                                id="markdown-editor"
+                                class="markdown-editor-textarea"
+                                style="width: 100%; height: 400px; padding: 10px; border: 1px solid var(--cms-border-color, #ddd); border-radius: 6px 6px 0 0; background: var(--cms-bg, #fff); color: var(--cms-text, #333); font-family: monospace; resize: none;"
+                                placeholder="Write your story in Markdown..."
+                            ></textarea>
                             <div
-<!doctype html>
-<html lang="en" data-theme="{{ theme }}" data-font="{{ font_family }}">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{{ page_title }} - {{ site_title }}</title>
+                                id="markdown-preview"
+                                class="markdown-preview"
+                                style="display: block; width: 100%; margin-top: 10px; padding: 10px; border: 1px solid var(--cms-border-color, #ddd); min-height: 200px; background: var(--cms-bg-secondary, #f5f5f5);"
+                            >Preview will appear here as you type...</div>
+                            <p class="hint">
+                                Markdown editor with live preview. Use the toolbar for formatting.
+                            </p>
 
-        <!-- Performance: Preload key fonts -->
-        <link
-            rel="preload"
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-            as="style"
-            onload="this.rel = 'stylesheet'"
-        />
-        <link
-            rel="preload"
-            href="https://fonts.googleapis.com"
-            as="font"
-            crossorigin
-        />
-        <link
-            rel="preload"
-            href="https://fonts.gstatic.com"
-            as="font"
-            crossorigin
-        />
-        <noscript>
-            <link
-                href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-                rel="stylesheet"
-            />
-        </noscript>
-
-        <!-- Performance: Critical CSS inlined -->
-        <style>
-            *,
-            *::before,
-            *::after {
-                box-sizing: border-box;
-                margin: 0;
-                padding: 0;
-            }
-            html {
-                scroll-behavior: smooth;
-            }
-            body {
-                font-family: var(--font-body);
-                line-height: 1.6;
-                color: var(--paper-text);
-                background-color: var(--paper-bg);
-                transition:
-                    background-color 0.3s ease,
-                    color 0.3s ease;
-            }
-            a {
-                color: var(--paper-link-color);
-                text-decoration: none;
-                transition: color 0.2s ease;
-            }
-            a:hover {
-                color: var(--paper-link-hover);
-                text-decoration: underline;
-            }
-            img {
-                max-width: 100%;
-                height: auto;
-                aspect-ratio: attr(width) / attr(height);
-            }
-            img[src=""] {
-                display: none;
-            }
-            .paper-header,
-            .paper-nav,
-            .story-card,
-            .story-image,
-            .featured-image-container,
-            .cms-header,
-            .cms-sidebar,
-            .cms-nav {
-                contain: layout paint;
-            }
-            .story-card {
-                contain: layout paint;
-                min-height: 400px;
-            }
-            .story-image img,
-            .featured-image {
-                aspect-ratio: 16/9;
-                object-fit: cover;
-            }
-            .featured-image-container {
-                min-height: 300px;
-            }
-            .paper-header {
-                min-height: 80px;
-            }
-        </style>
-
-        <!-- Performance: Load non-critical CSS asynchronously -->
-        <link
-            rel="preload"
-            href="/static/css/style.css"
-            as="style"
-            onload="this.rel = 'stylesheet'"
-        />
-        <noscript>
-            <link rel="stylesheet" href="/static/css/style.css" />
-        </noscript>
-
-
-    </head>
-    <body class="theme-{{ theme }} cms-theme">
-        <!-- Mobile Sidebar Overlay -->
-        <div class="cms-sidebar-overlay" onclick="closeMobileSidebar()"></div>
-
-        <!-- Mobile Bottom Navigation -->
-        <nav class="cms-bottom-nav">
-            <ul class="cms-nav">
-                <li>
-                    <a href="/cms/dashboard" class="nav-item">
-                        <span class="nav-icon">&#128196;</span>
-                        <span>Dashboard</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/cms/stories" class="nav-item">
-                        <span class="nav-icon">&#128218;</span>
-                        <span>Stories</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/cms/create" class="nav-item">
-                        <span class="nav-icon">&#9998;</span>
-                        <span>New</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/cms/settings" class="nav-item">
-                        <span class="nav-icon">&#9881;</span>
-                        <span>Settings</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/" class="nav-item view-paper-btn" target="_blank">
-                        <span class="nav-icon">&#128065;</span>
-                        <span>View</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-
-        <script src="/static/js/script.js" defer></script>
-        <script src="/static/js/markdown-editor.js?v=2" defer></script>
-        
-    </body>
-</html>
+<script src="/static/js/markdown-editor.js?v=2" defer>
