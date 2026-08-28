@@ -92,34 +92,34 @@
     previewWrap.style.flexDirection = 'column';
     previewWrap.style.position = 'relative';
 
-    // Toggle button - placed inside preview wrap
+    // Toggle button - placed on container so it's always visible
     var toggleBtn = document.createElement('button');
     toggleBtn.innerHTML = 'Hide Preview';
     toggleBtn.title = 'Toggle Preview';
-    toggleBtn.style.alignSelf = 'flex-end';
-    toggleBtn.style.marginBottom = '8px';
+    toggleBtn.style.position = 'absolute';
+    toggleBtn.style.top = '8px';
+    toggleBtn.style.right = '8px';
     toggleBtn.style.background = 'var(--cms-bg, #fff)';
     toggleBtn.style.border = '1px solid var(--cms-border-color, #e0e0e0)';
     toggleBtn.style.borderRadius = '4px';
     toggleBtn.style.padding = '4px 8px';
     toggleBtn.style.cursor = 'pointer';
     toggleBtn.style.fontSize = '11px';
+    toggleBtn.style.zIndex = '10';
     toggleBtn.onclick = function() {
-        if (previewWrap.style.flex === '0 0 0px' || previewWrap.style.display === 'none') {
-            previewWrap.style.flex = '1 1 40%';
-            previewWrap.style.minWidth = '0';
+        if (previewWrap.style.display === 'none') {
             previewWrap.style.display = 'flex';
+            editorWrap.style.flex = '1 1 60%';
             toggleBtn.innerHTML = 'Hide Preview';
             resizeHandle.style.display = 'block';
         } else {
-            previewWrap.style.flex = '0 0 0px';
-            previewWrap.style.minWidth = '0';
             previewWrap.style.display = 'none';
+            editorWrap.style.flex = '1';
             toggleBtn.innerHTML = 'Show Preview';
             resizeHandle.style.display = 'none';
         }
     };
-    previewWrap.appendChild(toggleBtn);
+    container.appendChild(toggleBtn);
     previewWrap.appendChild(preview);
 
     // Resize handle
