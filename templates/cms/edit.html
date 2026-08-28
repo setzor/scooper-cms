@@ -1,4 +1,4 @@
-ype html>
+<!doctype html>
 <html lang="en" data-theme="{{ theme }}" data-font="{{ font_family }}">
     <head>
         <meta charset="UTF-8" />
@@ -247,9 +247,7 @@ ype html>
                                 name="excerpt"
                                 rows="3"
                                 placeholder="Short summary of the story (optional)"
-                            >
-{{ story.excerpt }}</textarea
-                            >
+                            >{{ story.excerpt }}</textarea>
                             <p class="hint">
                                 This appears on the homepage. Leave blank to use
                                 first part of content.
@@ -262,8 +260,7 @@ ype html>
                                 id="content"
                                 name="content"
                                 style="display: none"
-                            >
-{{ story.content }}</textarea>
+                            >{{ story.content }}</textarea>
                             <textarea
                                 id="markdown-editor"
                                 class="markdown-editor-textarea"
@@ -278,5 +275,77 @@ ype html>
                             <p class="hint">
                                 Markdown editor with live preview. Use the toolbar for formatting.
                             </p>
+                        </div>
 
-<script src="/static/js/markdown-editor.js?v=2" defer>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="author">Author</label>
+                                <input
+                                    type="text"
+                                    id="author"
+                                    name="author"
+                                    value="Admin"
+                                    placeholder="Author name"
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="category">Category</label>
+                                <select id="category" name="category">
+                                    {% for cat in categories %}
+                                    <option value="{{ cat.name }}">
+                                        {{ cat.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="featured_image">Featured Image</label>
+                            <input
+                                type="file"
+                                id="featured_image"
+                                name="featured_image"
+                                accept="image/*"
+                            />
+                            <p class="hint">
+                                Upload an image or leave blank. Supported: JPG,
+                                PNG, GIF, WebP, SVG.
+                            </p>
+                        </div>
+
+                        <div class="form-group publish-group">
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    name="published"
+                                    value="on"
+                                />
+                                <span class="checkbox-label"
+                                    >Publish immediately</span
+                                >
+                            </label>
+                            <p class="hint">Uncheck to save as draft.</p>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <span>&#10003;</span> Save Story
+                            </button>
+                            <a href="/cms/stories" class="btn btn-secondary"
+                                >Cancel</a
+                            >
+                        </div>
+                    </form>
+                </div>
+            </main>
+        </div>
+
+        <!-- Performance: Load JavaScript with defer -->
+        <script src="/static/js/script.js" defer></script>
+        <script src="/static/js/markdown-editor.js?v=2" defer></script>
+        
+
+        
+    </body>
+</html>
