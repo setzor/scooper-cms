@@ -110,20 +110,26 @@
     toggleBtn.onclick = function(e) {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         if (previewWrap.style.display === 'none') {
             previewWrap.style.display = 'flex';
+            previewWrap.style.flex = '1 1 40%';
             editorWrap.style.flex = '1 1 60%';
             toggleBtn.innerHTML = 'Hide Preview';
             resizeHandle.style.display = 'block';
         } else {
             previewWrap.style.display = 'none';
+            previewWrap.style.flex = 'none';
             editorWrap.style.flex = '1';
             toggleBtn.innerHTML = 'Show Preview';
             resizeHandle.style.display = 'none';
         }
+        return false;
     };
-    container.appendChild(toggleBtn);
     previewWrap.appendChild(preview);
+
+    // Move toggle button outside the form by appending to originalParent
+    originalParent.appendChild(toggleBtn);
 
     // Resize handle
     var resizeHandle = document.createElement('div');
