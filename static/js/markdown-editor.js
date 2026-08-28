@@ -107,7 +107,9 @@
     toggleBtn.style.cursor = 'pointer';
     toggleBtn.style.fontSize = '11px';
     toggleBtn.style.zIndex = '10';
-    toggleBtn.onclick = function() {
+    toggleBtn.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
         if (previewWrap.style.display === 'none') {
             previewWrap.style.display = 'flex';
             editorWrap.style.flex = '1 1 60%';
