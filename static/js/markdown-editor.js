@@ -94,6 +94,7 @@
 
     // Toggle button - placed on container so it's always visible
     var toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
     toggleBtn.innerHTML = 'Hide Preview';
     toggleBtn.title = 'Toggle Preview';
     toggleBtn.style.position = 'absolute';
