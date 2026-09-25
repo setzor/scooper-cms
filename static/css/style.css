@@ -447,6 +447,9 @@
     --btn-danger-bg: var(--danger);
     --btn-danger-text: var(--danger-text);
     --btn-danger-hover: var(--danger-hover);
+
+    /* Minimum hit area for interactive elements on touch devices */
+    --touch-target: 48px;
 }
 
 /* ==========================================================================
@@ -1112,8 +1115,8 @@ code {
 }
 
 .form-group input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     accent-color: var(--primary);
     cursor: pointer;
 }
@@ -2426,6 +2429,62 @@ a.page-link:hover {
 
     .cms-header {
         padding: 12px 16px;
+    }
+}
+
+/* ==========================================================================
+   Touch targets (issue #41)
+   Compact controls are fine for mouse users; on coarse-pointer devices
+   (phones, tablets) every interactive element gets at least a 48x48px
+   hit area, with spacing preserved so layouts don't shift.
+   ========================================================================== */
+@media (pointer: coarse) {
+    .btn,
+    .btn-small,
+    .btn-tiny {
+        min-height: var(--touch-target);
+    }
+
+    .btn-icon,
+    .menu-toggle,
+    .theme-toggle {
+        width: var(--touch-target);
+        height: var(--touch-target);
+    }
+
+    .cms-sidebar .cms-nav .nav-item,
+    .view-paper-btn,
+    .cms-link,
+    .read-more {
+        min-height: var(--touch-target);
+    }
+
+    /* Enlarge small inline hit areas without disturbing layout */
+    .remove-filter {
+        padding: 14px 10px;
+        margin: -14px -10px;
+    }
+
+    .story-title a {
+        padding: 14px 0;
+    }
+
+    .title-cell a {
+        display: inline-flex;
+        align-items: center;
+        min-height: var(--touch-target);
+    }
+
+    /* Checkboxes are wrapped in labels; give the tap row full height */
+    .publish-group label,
+    .remove-image-label {
+        min-height: var(--touch-target);
+    }
+
+    /* Quill editor toolbar */
+    .ql-snow .ql-formats button,
+    .ql-snow .ql-picker-label {
+        min-height: var(--touch-target);
     }
 }
 
