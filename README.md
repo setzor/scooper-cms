@@ -1,6 +1,6 @@
 # Scooper CMS
 
-A functional, low-maintenance, and fun CMS for cozy news sites and blogs. No frameworks to babysit, no build steps to run - just a small Python server, a SQLite file, and your stories.
+A functional, low-maintenance, and fun CMS for cozy news sites and blogs. A small Python server, a SQLite file, and your stories.
 
 ## Features
 
