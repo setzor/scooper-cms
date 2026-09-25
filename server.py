@@ -1074,7 +1074,7 @@ def paper_story_handler(path, params, form_data, handler):
             "id": story["id"],
             "title": story["title"],
             "slug": story["slug"],
-            "content": story["content"],
+            "content": SafeString(story["content"]),
             "excerpt": story.get("excerpt", ""),
             "featured_image": story.get("featured_image", ""),
             "author": story.get("author", "Admin"),
