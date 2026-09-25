@@ -292,9 +292,17 @@ def init_db():
 
 
 def get_db():
-    """Get a database connection."""
-    conn = sqlite3.connect(DB_PATH)
+    """Get a database connection.
+
+    WAL mode lets readers and the writer work at the same time, so page
+    views don't hit 'database is locked' while a story is being saved.
+    timeout raises the busy wait from the 5s default so queued writers
+    wait instead of failing.
+    """
+    conn = sqlite3.connect(DB_PATH, timeout=10)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
     return conn
 
 
