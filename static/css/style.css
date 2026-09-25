@@ -1422,6 +1422,25 @@ code {
     white-space: nowrap;
 }
 
+/* Import / Export pages */
+.import-report {
+    margin-top: 32px;
+}
+
+.import-report h2 {
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+}
+
+.export-check-col {
+    width: 44px;
+    text-align: center;
+}
+
+.export-table td {
+    vertical-align: middle;
+}
+
 .actions-cell > * {
     margin-left: 8px;
 }

@@ -24,6 +24,7 @@ import socket
 import sqlite3
 import sys
 import uuid
+import zipfile
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
@@ -41,6 +42,13 @@ from editorjs_render import (
     is_editorjs_content,
     plain_text_excerpt,
     render_story_content,
+)
+from markdown_interchange import (
+    extract_leading_heading,
+    markdown_to_editorjs,
+    meta_to_story_fields,
+    parse_front_matter,
+    story_to_markdown,
 )
 from template_engine import get_engine as get_template_engine
 
@@ -158,6 +166,22 @@ def save_uploaded_file(field, upload_dir=None):
         return os.path.join("/static/uploads", unique_name)
     except Exception as e:
         print(f"Error saving file: {e}")
+        return None
+
+
+def save_image_bytes(image_bytes, original_name):
+    """Save raw image bytes (e.g. from an import archive) to uploads."""
+    ext = os.path.splitext(original_name or "")[1].lower()
+    if ext not in {".jpg", ".jpeg", ".png", ".gif", ".webp"}:
+        return None
+    unique_name = f"{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(UPLOADS_DIR, unique_name)
+    try:
+        with open(file_path, "wb") as f:
+            f.write(image_bytes)
+        return os.path.join("/static/uploads", unique_name)
+    except Exception as e:
+        print(f"Error saving image bytes: {e}")
         return None
 
 
@@ -834,6 +858,7 @@ class ScooperHandler(BaseHTTPRequestHandler):
             # Parse form data for POST
             form_data = {}
             files = {}
+            files_list = []
             if method == "POST":
                 content_type = self.headers.get("Content-Type", "")
                 content_length = int(self.headers.get("Content-Length", 0))
@@ -849,6 +874,7 @@ class ScooperHandler(BaseHTTPRequestHandler):
                                 if field.filename:
                                     # File upload field
                                     files[field.name] = field
+                                    files_list.append(field)
                                 else:
                                     # Regular form field
                                     form_data[field.name] = field.value
@@ -866,6 +892,7 @@ class ScooperHandler(BaseHTTPRequestHandler):
 
             # Store files on handler instance for access in handlers
             self.files = files
+            self.files_list = files_list
 
             # CSRF Validation for POST requests to CMS
             if method == "POST" and is_cms_request:
@@ -925,6 +952,9 @@ class ScooperHandler(BaseHTTPRequestHandler):
 
                 if isinstance(content, (dict, list)):
                     self.wfile.write(json.dumps(content).encode("utf-8"))
+                elif isinstance(content, bytes):
+                    # Binary responses (file downloads) are written as-is
+                    self.wfile.write(content)
                 else:
                     self.wfile.write(content.encode("utf-8"))
             except Exception:
@@ -1606,6 +1636,273 @@ def cms_upload_image_handler(path, params, form_data, handler, csrf_token=None):
     return {"success": 1, "file": {"url": saved_path}}
 
 
+IMAGE_REF_RE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
+
+
+def _read_import_zip(field):
+    """Extract .md entries and images from an uploaded zip archive.
+
+    Returns (md_entries, images): md_entries is a list of
+    (zip_path, markdown_text); images maps basename -> (zip_path, bytes).
+    Returns (None, None) when the data is not a valid zip.
+    """
+    try:
+        field.file.seek(0)
+        data = field.file.read()
+    except Exception:
+        return None, None
+
+    md_entries = []
+    images = {}
+    try:
+        with zipfile.ZipFile(BytesIO(data)) as zf:
+            for info in zf.infolist():
+                if info.is_dir():
+                    continue
+                base = os.path.basename(info.filename)
+                if not base or base.startswith("."):
+                    continue
+                lower = base.lower()
+                if lower.endswith((".md", ".markdown")):
+                    if base.lower() == "readme.md":
+                        results.append({
+                            "name": info.filename, "status": "skipped",
+                            "message": "documentation file (README.md)",
+                        })
+                        continue
+                    text = zf.read(info).decode("utf-8", errors="replace")
+                    md_entries.append((info.filename, text))
+                elif lower.endswith((".jpg", ".jpeg", ".png", ".gif", ".webp")):
+                    images.setdefault(base, (info.filename, zf.read(info)))
+    except zipfile.BadZipFile:
+        return None, None
+    return md_entries, images
+
+
+def _rewrite_image_refs(text, url_by_basename):
+    """Point markdown image refs at uploaded copies (Grav page media)."""
+    def repl(match):
+        alt = match.group(1)
+        url = match.group(2).strip()
+        base = os.path.basename(url.split("?")[0])
+        new_url = url_by_basename.get(base)
+        return f"![{alt}]({new_url})" if new_url else match.group(0)
+
+    return IMAGE_REF_RE.sub(repl, text)
+
+
+def cms_import_handler(path, params, form_data, handler, csrf_token=None):
+    """Import Markdown files (Grav pages, notes app exports) as stories."""
+    theme = get_current_theme()
+    theme_icon = get_theme_icon(theme)
+
+    context = {
+        "site_title": get_setting("site_title", "Scooper"),
+        "page_title": "Import Markdown",
+        "theme": theme,
+        "theme_icon": theme_icon,
+        "csrf_token": csrf_token or "",
+    }
+
+    if handler.files_list:
+        publish_default = form_data.get("publish") == "on"
+        results = []
+        md_entries = []  # (display_name, markdown_text)
+
+        for field in handler.files_list:
+            name = field.filename or "unnamed"
+            lower = name.lower()
+            if lower.endswith(".zip"):
+                zip_md, zip_images = _read_import_zip(field)
+                if zip_md is None:
+                    results.append({
+                        "name": name, "status": "skipped",
+                        "message": "not a valid zip archive",
+                    })
+                    continue
+                # Save only images referenced by the markdown in this zip
+                ref_bases = set()
+                for _, text in zip_md:
+                    for m in IMAGE_REF_RE.finditer(text):
+                        ref_bases.add(os.path.basename(m.group(2).split("?")[0]))
+                url_map = {}
+                for base, (_, blob) in zip_images.items():
+                    if base in ref_bases:
+                        saved = save_image_bytes(blob, base)
+                        if saved:
+                            url_map[base] = saved
+                for display, text in zip_md:
+                    md_entries.append((display, _rewrite_image_refs(text, url_map)))
+            elif lower.endswith((".md", ".markdown", ".txt")):
+                try:
+                    field.file.seek(0)
+                    md_entries.append((name, field.file.read().decode("utf-8", errors="replace")))
+                except Exception as e:
+                    results.append({"name": name, "status": "failed", "message": str(e)})
+            else:
+                results.append({
+                    "name": name, "status": "skipped",
+                    "message": "unsupported file type (use .md or .zip)",
+                })
+
+        for display_name, text in md_entries:
+            base_name = os.path.basename(display_name)
+            stem = os.path.splitext(base_name)[0]
+            report_name = display_name if "/" in display_name else base_name
+            try:
+                meta, body = parse_front_matter(text)
+                fields = meta_to_story_fields(meta, stem)
+                meta_title = meta.get("title") if isinstance(meta.get("title"), str) else ""
+                heading_title = None
+                if not meta_title:
+                    # Notes-app exports start with a heading instead of front
+                    # matter: use it as the title and drop the duplicate line
+                    heading_title, body = extract_leading_heading(body)
+                title = (meta_title or heading_title or stem).strip() or "Untitled import"
+                slug = slugify(fields["slug"] or title)
+
+                if get_story_by_slug(slug):
+                    results.append({
+                        "name": report_name, "status": "skipped",
+                        "message": f"a story with slug '{slug}' already exists",
+                    })
+                    continue
+
+                published = (
+                    fields["published"] if fields["published"] is not None
+                    else publish_default
+                )
+                content = markdown_to_editorjs(body, fallback_paragraph=text)
+                excerpt = fields["excerpt"]
+                if not excerpt.strip():
+                    excerpt = plain_text_excerpt(content, "editorjs")
+
+                story_data = {
+                    "title": title,
+                    "slug": slug,
+                    "content": content,
+                    "content_format": "editorjs",
+                    "excerpt": excerpt,
+                    "author": fields["author"] or "Imported",
+                    "category": fields["category"] or "General",
+                    "featured_image": "",
+                    "published": published,
+                    "published_at": (
+                        fields["published_at"] or datetime.now().isoformat()
+                    ) if published else None,
+                }
+                create_story(story_data)
+                results.append({
+                    "name": report_name, "title": title, "status": "imported",
+                    "message": "published" if published else "saved as draft",
+                })
+            except Exception as e:
+                # Fallback: import the raw markdown as a plain text draft so
+                # the content is never lost, even when conversion fails
+                try:
+                    title = stem or "Failed import"
+                    create_story({
+                        "title": title,
+                        "slug": slugify(title) + "-import",
+                        "content": markdown_to_editorjs("", fallback_paragraph=text),
+                        "content_format": "editorjs",
+                        "excerpt": "",
+                        "author": "Imported",
+                        "category": "General",
+                        "featured_image": "",
+                        "published": False,
+                        "published_at": None,
+                    })
+                    results.append({
+                        "name": report_name, "title": title, "status": "fallback",
+                        "message": f"imported as raw-text draft (conversion issue: {e})",
+                    })
+                except Exception as e2:
+                    results.append({
+                        "name": report_name, "status": "failed",
+                        "message": f"could not import: {e2}",
+                    })
+
+        context["results"] = results
+        context["imported_count"] = sum(
+            1 for r in results if r["status"] in ("imported", "fallback")
+        )
+        context["skipped_count"] = sum(1 for r in results if r["status"] == "skipped")
+        context["failed_count"] = sum(1 for r in results if r["status"] == "failed")
+
+    return render_template("cms/import.html", context)
+
+
+def cms_export_handler(path, params, form_data, handler, csrf_token=None):
+    """Export stories to Markdown: one .md file, or a .zip bundle."""
+    theme = get_current_theme()
+    theme_icon = get_theme_icon(theme)
+
+    context = {
+        "site_title": get_setting("site_title", "Scooper"),
+        "page_title": "Export Markdown",
+        "theme": theme,
+        "theme_icon": theme_icon,
+        "csrf_token": csrf_token or "",
+    }
+
+    if form_data:
+        ids = form_data.get("story_ids", [])
+        if isinstance(ids, str):
+            ids = [ids]
+        ids = [i for i in ids if str(i).isdigit()]
+
+        stories = [s for s in (get_story_by_id(i) for i in ids) if s]
+
+        if not stories:
+            all_stories, _ = get_all_stories(page=1, per_page=100000)
+            context["stories"] = _export_story_rows(all_stories)
+            context["error"] = "Select at least one story to export."
+            return render_template("cms/export.html", context)
+
+        files = []
+        for story in stories:
+            name = (story.get("slug") or f"story-{story['id']}") + ".md"
+            files.append((name, story_to_markdown(story)))
+
+        if len(files) == 1:
+            name, content = files[0]
+            return content, 200, {
+                "Content-Type": "text/markdown; charset=utf-8",
+                "Content-Disposition": f'attachment; filename="{name}"',
+            }
+
+        buffer = BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            for name, content in files:
+                zf.writestr(name, content)
+        data = buffer.getvalue()
+        filename = f"scooper-export-{datetime.now().strftime('%Y%m%d-%H%M%S')}.zip"
+        return data, 200, {
+            "Content-Type": "application/zip",
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(data)),
+        }
+
+    all_stories, _ = get_all_stories(page=1, per_page=100000)
+    context["stories"] = _export_story_rows(all_stories)
+    return render_template("cms/export.html", context)
+
+
+def _export_story_rows(stories):
+    return [
+        {
+            "id": s["id"],
+            "title": s["title"],
+            "category": s.get("category", "General"),
+            "published": bool(s.get("published")),
+            "published_at": format_date(s.get("published_at"))
+            or format_date(s.get("created_at")),
+        }
+        for s in stories
+    ]
+
+
 def cms_settings_handler(path, params, form_data, handler, csrf_token=None):
     """Handle CMS settings."""
     theme = get_current_theme()
@@ -1718,6 +2015,14 @@ ScooperHandler.add_route("POST", "/cms/delete/", cms_delete_handler)
 ScooperHandler.add_route("GET", "/cms/preview", cms_preview_handler)
 ScooperHandler.add_route("GET", "/cms/preview/", cms_preview_handler)
 ScooperHandler.add_route("POST", "/cms/upload-image", cms_upload_image_handler)
+ScooperHandler.add_route("GET", "/cms/import", cms_import_handler)
+ScooperHandler.add_route("GET", "/cms/import/", cms_import_handler)
+ScooperHandler.add_route("POST", "/cms/import", cms_import_handler)
+ScooperHandler.add_route("POST", "/cms/import/", cms_import_handler)
+ScooperHandler.add_route("GET", "/cms/export", cms_export_handler)
+ScooperHandler.add_route("GET", "/cms/export/", cms_export_handler)
+ScooperHandler.add_route("POST", "/cms/export", cms_export_handler)
+ScooperHandler.add_route("POST", "/cms/export/", cms_export_handler)
 ScooperHandler.add_route("GET", "/cms/settings", cms_settings_handler)
 ScooperHandler.add_route("GET", "/cms/settings/", cms_settings_handler)
 ScooperHandler.add_route("POST", "/cms/settings", cms_settings_handler)
