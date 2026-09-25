@@ -200,10 +200,34 @@ def validate_csrf_token(request_cookie_token, request_form_token):
 # ============================================================================
 
 
+def get_current_theme():
+    """Read the site theme, mapping the retired glass theme names to their base themes."""
+    theme = get_setting("theme", "light")
+    if theme == "glass":
+        return "light"
+    if theme == "glass-dark":
+        return "dark"
+    return theme
+
+
 def get_theme_icon(theme):
     """Get the appropriate icon for a theme (sun for light, moon for dark)."""
-    light_themes = ["light", "rose-pine-dawn", "catpuccin-latte", "glass"]
-    icon = "&#127774;" if theme in light_themes else "&#127771;"
+    light_themes = ["light", "rose-pine-dawn", "catpuccin-latte"]
+    if theme in light_themes:
+        icon = (
+            '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" '
+            'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+            'stroke-linejoin="round"><circle cx="12" cy="12" r="4"/>'
+            '<path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41'
+            'M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>'
+        )
+    else:
+        icon = (
+            '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" '
+            'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+            'stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 '
+            '7 7 0 0 0 21 12.79z"/></svg>'
+        )
     return SafeString(icon)
 
 
@@ -260,7 +284,7 @@ def init_db():
         "INSERT OR IGNORE INTO settings (key, value) VALUES ('site_description', 'Your News, Delivered')"
     )
     cursor.execute(
-        "INSERT OR IGNORE INTO settings (key, value) VALUES ('theme', 'glass')"
+        "INSERT OR IGNORE INTO settings (key, value) VALUES ('theme', 'light')"
     )
 
     conn.commit()
@@ -973,7 +997,7 @@ class ScooperHandler(BaseHTTPRequestHandler):
 
 def paper_home_handler(path, params, form_data, handler):
     """Handle the paper homepage."""
-    theme = get_setting("theme", "light")
+    theme = get_current_theme()
     # Get page from query params, default to 1
     page = int(params.get("page", 1))
     stories, total_count = get_all_stories(published_only=True, page=page, per_page=10)
@@ -1008,6 +1032,8 @@ def paper_home_handler(path, params, form_data, handler):
     context = {
         "site_title": site_title,
         "site_description": site_description,
+        "meta_title": site_title,
+        "meta_description": site_description,
         "theme": theme,
         "theme_icon": theme_icon,
         "font_family": font_family,
@@ -1033,7 +1059,7 @@ def paper_story_handler(path, params, form_data, handler):
     if not story:
         return "<h1>404 - Story not found</h1>", 404
 
-    theme = get_setting("theme", "light")
+    theme = get_current_theme()
     site_title = get_setting("site_title", "Scooper Paper")
     site_description = get_setting("site_description", "Your News, Delivered")
     theme_icon = get_theme_icon(theme)
@@ -1042,6 +1068,8 @@ def paper_story_handler(path, params, form_data, handler):
     context = {
         "site_title": site_title,
         "site_description": site_description,
+        "meta_title": f"{story['title']} - {site_title}",
+        "meta_description": story.get("excerpt", "") or site_description,
         "theme": theme,
         "theme_icon": theme_icon,
         "font_family": font_family,
@@ -1065,11 +1093,12 @@ def paper_story_handler(path, params, form_data, handler):
 
 def cms_dashboard_handler(path, params, form_data, handler, csrf_token=None):
     """Handle CMS dashboard."""
-    theme = get_setting("theme", "light")
+    theme = get_current_theme()
     # Get first page for dashboard (shows recent stories)
     stories, total_count = get_all_stories(page=1, per_page=5)
 
-    published_count = sum(1 for s in stories if s.get("published", False))
+    _, published_count = get_all_stories(page=1, per_page=1, status="published")
+    category_count = len(get_all_categories())
 
     formatted_stories = []
     for story in stories:
@@ -1090,6 +1119,7 @@ def cms_dashboard_handler(path, params, form_data, handler, csrf_token=None):
         "stories": stories,
         "total_stories": total_count,
         "published_count": published_count,
+        "category_count": category_count,
         "recent_stories": formatted_stories,
         "csrf_token": csrf_token or "",
     }
@@ -1099,7 +1129,7 @@ def cms_dashboard_handler(path, params, form_data, handler, csrf_token=None):
 
 def cms_stories_handler(path, params, form_data, handler, csrf_token=None):
     """Handle CMS stories list with filtering support."""
-    theme = get_setting("theme", "light")
+    theme = get_current_theme()
 
     # Parse filter parameters from query string
     search_query = params.get("q", "").strip()
@@ -1320,7 +1350,7 @@ def cms_stories_handler(path, params, form_data, handler, csrf_token=None):
 
 def cms_create_handler(path, params, form_data, handler, csrf_token=None):
     """Handle story creation form."""
-    theme = get_setting("theme", "light")
+    theme = get_current_theme()
 
     if form_data and "title" in form_data:
         # Process form submission
@@ -1377,7 +1407,7 @@ def cms_create_handler(path, params, form_data, handler, csrf_token=None):
 
 def cms_edit_handler(path, params, form_data, handler, csrf_token=None):
     """Handle story editing form."""
-    theme = get_setting("theme", "light")
+    theme = get_current_theme()
 
     # Extract story ID
     parts = [p for p in path.split("/") if p]
@@ -1473,7 +1503,7 @@ def cms_preview_handler(path, params, form_data, handler, csrf_token=None):
     if not story:
         return "<h1>404 - Story not found</h1>", 404
 
-    theme = get_setting("theme", "light")
+    theme = get_current_theme()
     site_title = get_setting("site_title", "Scooper Paper")
     site_description = get_setting("site_description", "Your News, Delivered")
     theme_icon = get_theme_icon(theme)
@@ -1482,6 +1512,8 @@ def cms_preview_handler(path, params, form_data, handler, csrf_token=None):
     context = {
         "site_title": site_title,
         "site_description": site_description,
+        "meta_title": f"{story['title']} - {site_title}",
+        "meta_description": story.get("excerpt", "") or site_description,
         "theme": theme,
         "theme_icon": theme_icon,
         "font_family": font_family,
@@ -1504,7 +1536,7 @@ def cms_preview_handler(path, params, form_data, handler, csrf_token=None):
 
 def cms_settings_handler(path, params, form_data, handler, csrf_token=None):
     """Handle CMS settings."""
-    theme = get_setting("theme", "light")
+    theme = get_current_theme()
 
     if form_data:
         # Update settings
@@ -1612,7 +1644,7 @@ ScooperHandler.add_route("POST", "/cms/settings/", cms_settings_handler)
 ScooperHandler.add_route("POST", "/api/toggle-theme", toggle_theme_handler)
 
 
-def cms_backup_handler(path, params, form_data, handler):
+def cms_backup_handler(path, params, form_data, handler, csrf_token=None):
     """Handle database backup requests from CMS."""
     if handler.command == "GET":
         # List existing backups
@@ -1624,24 +1656,32 @@ def cms_backup_handler(path, params, form_data, handler):
                 if filename.startswith("scooper_backup_") and filename.endswith(".db"):
                     filepath = os.path.join(BACKUP_DIR, filename)
                     stat = os.stat(filepath)
+                    created = datetime.fromtimestamp(stat.st_mtime).isoformat()
                     backup_files.append(
                         {
                             "name": filename,
                             "path": filepath,
                             "size": stat.st_size,
-                            "created": datetime.fromtimestamp(
-                                stat.st_mtime
-                            ).isoformat(),
+                            "size_mb": f"{stat.st_size / 1024 / 1024:.2f}",
+                            "created": created,
+                            "created_display": created[:19],
                         }
                     )
 
         latest = get_latest_backup()
-        template = handler.template_engine.get_template("cms/backup.html")
-        return template.render(
-            backups=backup_files,
-            latest_backup=latest,
-            csrf_token=params.get("csrf_token", ""),
-        ), 200
+        theme = get_current_theme()
+        context = {
+            "site_title": get_setting("site_title", "Scooper"),
+            "page_title": "Database Backup",
+            "theme": theme,
+            "theme_icon": get_theme_icon(theme),
+            "font_family": get_setting("font_family", "serif"),
+            "csrf_token": csrf_token or "",
+            "backups": backup_files,
+            "latest_backup": latest,
+            "latest_backup_name": os.path.basename(latest) if latest else "",
+        }
+        return render_template("cms/backup.html", context), 200
 
     elif handler.command == "POST":
         # Create a new backup or restore

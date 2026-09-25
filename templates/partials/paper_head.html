@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en" data-theme="{{ theme }}" data-font="{{ font_family }}">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{{ meta_title }}</title>
+        <meta name="description" content="{{ meta_description }}" />
+
+        <!-- Fonts: Nunito (UI), Playfair Display (headings), Lora (body) -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lora:wght@400;600&family=Nunito:wght@400;600;700&display=swap"
+        />
+        <noscript>
+            <link
+                rel="stylesheet"
+                href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lora:wght@400;600&family=Nunito:wght@400;600;700&display=swap"
+            />
+        </noscript>
+
+        <!-- Critical CSS: base tokens and above-the-fold rules (full sheet loads async) -->
+        <style>
+            :root {
+                --bg: #faf3ea;
+                --text: #42322e;
+                --link: #b34a62;
+                --font-body: "Lora", "Source Serif Pro", Georgia, serif;
+            }
+            [data-theme="dark"] {
+                --bg: #241b21;
+                --text: #f0e4d9;
+                --link: #f0a3b5;
+            }
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            html {
+                scroll-behavior: smooth;
+            }
+            body {
+                font-family: var(--font-body);
+                line-height: 1.65;
+                color: var(--text);
+                background-color: var(--bg);
+                transition:
+                    background-color 0.25s ease,
+                    color 0.25s ease;
+            }
+            a {
+                color: var(--link);
+                text-decoration: none;
+            }
+            img {
+                max-width: 100%;
+                height: auto;
+            }
+            .paper-header,
+            .story-card,
+            .story-image,
+            .featured-image-container {
+                contain: layout paint;
+            }
+            .story-card {
+                min-height: 400px;
+            }
+            .story-image img,
+            .featured-image {
+                aspect-ratio: 16/9;
+                object-fit: cover;
+            }
+            .featured-image-container {
+                min-height: 300px;
+            }
+            .paper-header {
+                min-height: 80px;
+            }
+        </style>
+
+        <!-- Full stylesheet, loaded without blocking render -->
+        <link
+            rel="preload"
+            href="/static/css/style.css"
+            as="style"
+            onload="this.rel = 'stylesheet'"
+        />
+        <noscript>
+            <link rel="stylesheet" href="/static/css/style.css" />
+        </noscript>
+    </head>
