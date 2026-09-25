@@ -59,12 +59,11 @@
     --shadow-lg: 0 10px 28px rgba(84, 56, 41, 0.14);
     --shadow-primary: 0 4px 14px rgba(217, 93, 120, 0.35);
 
-    /* Typography */
-    --font-serif: "Playfair Display", "Source Serif Pro", Georgia, serif;
-    --font-serif-body: "Lora", "Source Serif Pro", Georgia, serif;
+    /* Typography: Playfair Display for headings, Nunito everywhere else */
+    --font-serif: "Playfair Display", Georgia, serif;
     --font-sans: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI",
         sans-serif;
-    --font-body: var(--font-serif-body);
+    --font-body: var(--font-sans);
     --font-ui: var(--font-sans);
 
     /* Shape and rhythm */
@@ -74,14 +73,6 @@
     --sidebar-width: 250px;
     --header-height: 64px;
     --content-max: 1080px;
-}
-
-[data-font="sans"] {
-    --font-body: var(--font-sans);
-}
-
-[data-font="serif"] {
-    --font-body: var(--font-serif-body);
 }
 
 /* Dark theme - Midnight Chocolate */
@@ -1397,8 +1388,7 @@ a.page-link:hover {
     align-items: flex-start;
 }
 
-.theme-dropdown,
-.font-dropdown {
+.theme-dropdown {
     min-width: 220px;
     min-height: 46px;
     padding: 10px 14px;
