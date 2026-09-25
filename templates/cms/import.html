@@ -1,0 +1,104 @@
+{% include "partials/cms_head.html" %}
+{% include "partials/cms_chrome.html" %}
+
+<div class="cms-content">
+    <div class="story-form">
+        <form
+            action="/cms/import"
+            method="post"
+            enctype="multipart/form-data"
+        >
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token }}"
+            />
+
+            <div class="form-group">
+                <label for="files">Markdown files (.md) or a .zip archive</label>
+                <input
+                    type="file"
+                    id="files"
+                    name="files"
+                    multiple
+                    accept=".md,.markdown,.txt,.zip"
+                    required
+                />
+                <p class="hint">
+                    Bring in stories from Grav, Obsidian, Bear, Jekyll, or any
+                    app that writes Markdown. Front matter (title, slug,
+                    category, date, published) is picked up automatically;
+                    files without front matter use the filename as the title.
+                    A Grav-style zip also copies referenced images.
+                </p>
+            </div>
+
+            <div class="form-group publish-group">
+                <label>
+                    <input type="checkbox" name="publish" value="on" />
+                    <span class="checkbox-label">Publish immediately</span>
+                </label>
+                <p class="hint">
+                    Unchecked, stories are saved as drafts. Front matter with
+                    an explicit <code>published:</code> value wins over this
+                    checkbox.
+                </p>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" name="import" value="1" class="btn btn-primary">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+                    Import
+                </button>
+                <a href="/cms/export" class="btn btn-secondary">Export stories instead</a>
+                <a href="/cms/stories" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+
+        {% if results %}
+        <div class="import-report">
+            <h2>Import report</h2>
+            <p class="hint">
+                {{ imported_count }} imported, {{ skipped_count }} skipped,
+                {{ failed_count }} failed. Files that fail to convert are
+                imported as raw-text drafts, so nothing is lost.
+            </p>
+            <div class="table-container">
+                <table class="stories-table import-table">
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Result</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in results %}
+                        <tr>
+                            <td class="title-cell">{{ r.name }}{% if r.title and r.title != r.name %} &rarr; {{ r.title }}{% endif %}</td>
+                            <td>
+                                {% if r.status == "imported" %}<span class="status-badge published">{{ r.status }}</span>
+                                {% elif r.status == "fallback" %}<span class="status-badge draft">{{ r.status }}</span>
+                                {% elif r.status == "skipped" %}<span class="status-badge draft">{{ r.status }}</span>
+                                {% else %}<span class="status-badge draft">{{ r.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ r.message }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p>
+                <a href="/cms/stories" class="btn btn-secondary">Go to stories</a>
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+</main>
+</div>
+
+<script src="/static/js/script.js" defer></script>
+</body>
+</html>

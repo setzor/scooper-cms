@@ -1,0 +1,114 @@
+{% include "partials/cms_head.html" %}
+{% include "partials/cms_chrome.html" %}
+
+<div class="cms-content">
+    <div class="story-form">
+        <form action="/cms/export" method="post">
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token }}"
+            />
+
+            {% if error %}
+            <div class="message error">{{ error }}</div>
+            {% endif %}
+
+            <div class="form-group">
+                <label>Stories to export</label>
+                <p class="hint">
+                    Each story becomes a Markdown file with front matter
+                    (title, slug, author, category, date, published, excerpt)
+                    that Scooper's importer - and Grav, Obsidian, and friends -
+                    understand. One story downloads as a single .md file;
+                    several come as a .zip.
+                </p>
+                <p>
+                    <a href="#" id="select-all" class="btn btn-small btn-secondary">Select all</a>
+                    <a href="#" id="select-none" class="btn btn-small btn-secondary">Select none</a>
+                </p>
+            </div>
+
+            <div class="table-container">
+                <table class="stories-table export-table">
+                    <thead>
+                        <tr>
+                            <th class="export-check-col"></th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for story in stories %}
+                        <tr>
+                            <td class="export-check-col">
+                                <input
+                                    type="checkbox"
+                                    class="export-checkbox"
+                                    name="story_ids"
+                                    value="{{ story.id }}"
+                                    checked
+                                />
+                            </td>
+                            <td class="title-cell">{{ story.title }}</td>
+                            <td>{{ story.category }}</td>
+                            <td>
+                                {% if story.published %}
+                                <span class="status-badge published">published</span>
+                                {% else %}
+                                <span class="status-badge draft">draft</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ story.published_at }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% if not stories %}
+                        <tr>
+                            <td colspan="5" class="empty-state">
+                                No stories to export yet.
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" name="export" value="1" class="btn btn-primary">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 1 12 6 17 1"/><line x1="12" y1="6" x2="12" y2="15"/></svg></span>
+                    Export selected
+                </button>
+                <a href="/cms/import" class="btn btn-secondary">Import stories instead</a>
+                <a href="/cms/stories" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+</main>
+</div>
+
+<script src="/static/js/script.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var selectAll = document.getElementById("select-all");
+        var selectNone = document.getElementById("select-none");
+        var boxes = document.querySelectorAll(".export-checkbox");
+
+        if (selectAll) {
+            selectAll.addEventListener("click", function (e) {
+                e.preventDefault();
+                boxes.forEach(function (b) { b.checked = true; });
+            });
+        }
+        if (selectNone) {
+            selectNone.addEventListener("click", function (e) {
+                e.preventDefault();
+                boxes.forEach(function (b) { b.checked = false; });
+            });
+        }
+    });
+</script>
+</body>
+</html>
