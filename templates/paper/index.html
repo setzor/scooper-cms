@@ -41,6 +41,15 @@
                         </article>
                         {% endfor %}
                     </div>
+                    {% if not stories %}
+                    <div class="empty-state">
+                        {% include "partials/illu_sleepy.html" %}
+                        <p>
+                            No stories yet — the newsroom cat is napping.
+                            <a href="/cms/create">Write the first one</a>.
+                        </p>
+                    </div>
+                    {% endif %}
                 </section>
 
                 {% if pagination.total_pages > 1 %}

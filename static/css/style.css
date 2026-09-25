@@ -546,6 +546,71 @@ code {
 }
 
 /* ==========================================================================
+   Illustrations (original kawaii SVGs; intrinsic sizes are set on the
+   elements so they are correct even before this sheet loads)
+   ========================================================================== */
+.illu {
+    display: block;
+    height: auto;
+}
+
+/* Cat mascot next to the paper title */
+.logo a {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.illu-cat {
+    width: 34px;
+    height: 34px;
+    flex: none;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.logo a:hover .illu-cat {
+    transform: rotate(-8deg) scale(1.12);
+}
+
+/* Cat companion curled up in the corner of CMS pages (a different pose per page) */
+.corner-mascot {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: -6px;
+}
+
+.corner-mascot .illu {
+    width: 150px;
+    animation: cat-float 4.5s ease-in-out infinite;
+}
+
+@keyframes cat-float {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-4px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .corner-mascot .illu {
+        animation: none;
+    }
+
+    .illu-cat {
+        transition: none;
+    }
+}
+
+/* Empty states */
+.empty-state .illu {
+    max-width: 220px;
+    margin: 0 auto 14px;
+}
+
+/* ==========================================================================
    Buttons (44px minimum touch targets, WCAG friendly)
    ========================================================================== */
 .btn {
