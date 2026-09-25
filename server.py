@@ -36,6 +36,12 @@ from backup_utils import (
     restore_database,
 )
 from template_engine import SafeString
+from editorjs_render import (
+    CONTENT_FORMAT_EDITORJS,
+    is_editorjs_content,
+    plain_text_excerpt,
+    render_story_content,
+)
 from template_engine import get_engine as get_template_engine
 
 # HELPERS
@@ -267,6 +273,13 @@ def init_db():
         )
     """)
 
+    # Content format migration: 'html' (legacy Quill) or 'editorjs' (blocks)
+    columns = [row[1] for row in cursor.execute("PRAGMA table_info(stories)").fetchall()]
+    if "content_format" not in columns:
+        cursor.execute(
+            "ALTER TABLE stories ADD COLUMN content_format TEXT NOT NULL DEFAULT 'html'"
+        )
+
     # Categories table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS categories (
@@ -420,12 +433,13 @@ def create_story(data):
     while True:
         try:
             cursor = conn.execute(
-                """INSERT INTO stories (title, slug, content, excerpt, author, category, featured_image, published, published_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                """INSERT INTO stories (title, slug, content, content_format, excerpt, author, category, featured_image, published, published_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     data.get("title"),
                     slug,
                     data.get("content"),
+                    data.get("content_format", "html"),
                     data.get("excerpt"),
                     data.get("author", "Admin"),
                     category,
@@ -449,7 +463,7 @@ def update_story(story_id, data):
     # Validate category - fall back to General if not found
     category = get_valid_category(data.get("category", "General"))
     conn.execute(
-        """UPDATE stories SET title = ?, slug = ?, content = ?, excerpt = ?,
+        """UPDATE stories SET title = ?, slug = ?, content = ?, content_format = ?, excerpt = ?,
            author = ?, category = ?, featured_image = ?, published = ?,
            published_at = ?, updated_at = CURRENT_TIMESTAMP
            WHERE id = ?""",
@@ -457,6 +471,7 @@ def update_story(story_id, data):
             data.get("title"),
             data.get("slug"),
             data.get("content"),
+            data.get("content_format", "html"),
             data.get("excerpt"),
             data.get("author", "Admin"),
             category,
@@ -1016,7 +1031,12 @@ def paper_home_handler(path, params, form_data, handler):
     # Format stories
     formatted_stories = []
     for story in stories:
-        excerpt = story.get("excerpt", story["content"][:150] + "...")
+        excerpt = (
+            story.get("excerpt")
+            or plain_text_excerpt(
+                story["content"], story.get("content_format", "html")
+            )
+        )
         formatted_stories.append(
             {
                 "id": story["id"],
@@ -1083,7 +1103,9 @@ def paper_story_handler(path, params, form_data, handler):
             "id": story["id"],
             "title": story["title"],
             "slug": story["slug"],
-            "content": SafeString(story["content"]),
+            "content": render_story_content(
+                story["content"], story.get("content_format", "html")
+            ),
             "excerpt": story.get("excerpt", ""),
             "featured_image": story.get("featured_image", ""),
             "author": story.get("author", "Admin"),
@@ -1367,11 +1389,22 @@ def cms_create_handler(path, params, form_data, handler, csrf_token=None):
                 if saved_path:
                     featured_image_path = saved_path
 
+        content_format = form_data.get("content_format", "html")
+        content = form_data.get("content", "")
+        if content_format == CONTENT_FORMAT_EDITORJS and not is_editorjs_content(content):
+            # Malformed block payload - keep the raw text as legacy HTML
+            content_format = "html"
+
+        excerpt = form_data.get("excerpt", "")
+        if not excerpt.strip():
+            excerpt = plain_text_excerpt(content, content_format)
+
         story_data = {
             "title": form_data["title"],
             "slug": slugify(form_data["title"]),
-            "content": form_data.get("content", ""),
-            "excerpt": form_data.get("excerpt", ""),
+            "content": content,
+            "content_format": content_format,
+            "excerpt": excerpt,
             "author": form_data.get("author", "Admin"),
             "category": form_data.get("category", "General"),
             "featured_image": featured_image_path,
@@ -1436,11 +1469,22 @@ def cms_edit_handler(path, params, form_data, handler, csrf_token=None):
                 if saved_path:
                     featured_image_path = saved_path
 
+        content_format = form_data.get("content_format", "html")
+        content = form_data.get("content", "")
+        if content_format == CONTENT_FORMAT_EDITORJS and not is_editorjs_content(content):
+            # Malformed block payload - keep the raw text as legacy HTML
+            content_format = "html"
+
+        excerpt = form_data.get("excerpt", "")
+        if not excerpt.strip():
+            excerpt = plain_text_excerpt(content, content_format)
+
         story_data = {
             "title": form_data["title"],
             "slug": slugify(form_data["title"]),
-            "content": form_data.get("content", ""),
-            "excerpt": form_data.get("excerpt", ""),
+            "content": content,
+            "content_format": content_format,
+            "excerpt": excerpt,
             "author": form_data.get("author", story.get("author", "Admin")),
             "category": form_data.get("category", story.get("category", "General")),
             "featured_image": featured_image_path,
@@ -1462,6 +1506,13 @@ def cms_edit_handler(path, params, form_data, handler, csrf_token=None):
     categories.sort(key=lambda c: c["name"])
     theme_icon = get_theme_icon(theme)
 
+    content_format = story.get("content_format", "html")
+    if content_format == CONTENT_FORMAT_EDITORJS:
+        # Embed block JSON in a <script> tag; break </script> sequences
+        story_content = SafeString(story["content"].replace("</", "<\\/"))
+    else:
+        story_content = SafeString(story["content"])
+
     context = {
         "site_title": get_setting("site_title", "Scooper"),
         "page_title": f"Edit: {story['title']}",
@@ -1471,7 +1522,8 @@ def cms_edit_handler(path, params, form_data, handler, csrf_token=None):
             "id": story["id"],
             "title": story["title"],
             "slug": story["slug"],
-            "content": SafeString(story["content"]),
+            "content": story_content,
+            "content_format": content_format,
             "excerpt": SafeString(story.get("excerpt", "")),
             "author": story.get("author", "Admin"),
             "category": story.get("category", "General"),
@@ -1520,7 +1572,9 @@ def cms_preview_handler(path, params, form_data, handler, csrf_token=None):
             "id": story["id"],
             "title": story["title"],
             "slug": story["slug"],
-            "content": SafeString(story["content"]),
+            "content": render_story_content(
+                story["content"], story.get("content_format", "html")
+            ),
             "excerpt": SafeString(story.get("excerpt", "")),
             "author": story.get("author", "Admin"),
             "category": story.get("category", "General"),
@@ -1530,6 +1584,26 @@ def cms_preview_handler(path, params, form_data, handler, csrf_token=None):
     }
 
     return render_template("paper/story.html", context)
+
+
+def cms_upload_image_handler(path, params, form_data, handler, csrf_token=None):
+    """Upload a content image for the block editor (Editor.js image tool).
+
+    Returns Editor.js uploader protocol JSON:
+    {"success": 1, "file": {"url": "/static/uploads/..."}}
+    """
+    file_field = handler.files.get("image")
+    if not file_field or not getattr(file_field, "filename", ""):
+        return {"success": 0, "error": "No image provided"}, 400
+
+    saved_path = save_uploaded_file(file_field)
+    if not saved_path:
+        return {
+            "success": 0,
+            "error": "Unsupported image type (use JPG, PNG, GIF or WebP)",
+        }, 400
+
+    return {"success": 1, "file": {"url": saved_path}}
 
 
 def cms_settings_handler(path, params, form_data, handler, csrf_token=None):
@@ -1643,6 +1717,7 @@ ScooperHandler.add_route("POST", "/cms/delete", cms_delete_handler)
 ScooperHandler.add_route("POST", "/cms/delete/", cms_delete_handler)
 ScooperHandler.add_route("GET", "/cms/preview", cms_preview_handler)
 ScooperHandler.add_route("GET", "/cms/preview/", cms_preview_handler)
+ScooperHandler.add_route("POST", "/cms/upload-image", cms_upload_image_handler)
 ScooperHandler.add_route("GET", "/cms/settings", cms_settings_handler)
 ScooperHandler.add_route("GET", "/cms/settings/", cms_settings_handler)
 ScooperHandler.add_route("POST", "/cms/settings", cms_settings_handler)

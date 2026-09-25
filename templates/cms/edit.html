@@ -1,12 +1,28 @@
 {% include "partials/cms_head.html" %}
 {% include "partials/cms_chrome.html" %}
 
-<!-- Quill Rich Text Editor (MIT license) -->
+{% if story.content_format == "editorjs" %}
+<!-- Editor.js block editor (Apache-2.0) -->
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2/dist/editorjs.umd.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/header@2" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/list@1" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@2" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/code@2" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@1" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/image@2" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/table@2" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@2" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@1" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/inline-code@1" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/warning@1" defer></script>
+{% else %}
+<!-- Quill Rich Text Editor (MIT license) - legacy editor for HTML stories -->
 <link
     href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css"
     rel="stylesheet"
 />
 <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js" defer></script>
+{% endif %}
 
 <div class="cms-content">
     <form
@@ -39,8 +55,7 @@
                 name="excerpt"
                 rows="3"
                 placeholder="Short summary of the story (optional)"
-            >
-{{ story.excerpt }}</textarea>
+            >{{ story.excerpt }}</textarea>
             <p class="hint">
                 This appears on the homepage. Leave blank to use first part of
                 content.
@@ -49,17 +64,33 @@
 
         <div class="form-group">
             <label for="content">Content *</label>
+            {% if story.content_format == "editorjs" %}
+            <input type="hidden" name="content_format" id="content-format" value="editorjs" />
+            <script type="application/json" id="story-content-data">{{ story.content }}</script>
             <textarea
                 id="content"
                 name="content"
                 style="display: none"
-            >
-{{ story.content }}</textarea>
+            ></textarea>
+            <div id="editorjs" class="editorjs-container"></div>
+            <p class="hint">
+                Block editor: click the <strong>+</strong> for headings, lists,
+                quotes, code, images, tables and more. Select text for inline
+                formatting.
+            </p>
+            {% else %}
+            <input type="hidden" name="content_format" id="content-format" value="html" />
+            <textarea
+                id="content"
+                name="content"
+                style="display: none"
+            >{{ story.content }}</textarea>
             <div id="quill-editor" style="height: 500px; margin-bottom: 10px"></div>
             <p class="hint">
                 Rich text editor with support for images, formatting, lists,
                 and more.
             </p>
+            {% endif %}
         </div>
 
         <div class="form-row">
@@ -149,6 +180,123 @@
 </div>
 
 <script src="/static/js/script.js" defer></script>
+{% if story.content_format == "editorjs" %}
+<script>
+    var CSRF_TOKEN = "{{ csrf_token }}";
+    var scooperEditor = null;
+    var saveInterval = null;
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var container = document.getElementById("editorjs");
+        var contentField = document.getElementById("content");
+        var form = document.querySelector("form");
+        var storyData = document.getElementById("story-content-data");
+
+        if (typeof window.EditorJS === "undefined") {
+            // Editor library unreachable - fall back to raw JSON textarea.
+            // Keep the editorjs format so block JSON still renders on the
+            // public page; the server falls back to html if the payload
+            // no longer parses.
+            container.style.display = "none";
+            contentField.style.display = "";
+            contentField.style.minHeight = "300px";
+            contentField.value = storyData ? storyData.textContent.trim() : "";
+            startAutoSave();
+            return;
+        }
+
+        var initialContent = null;
+        try {
+            initialContent = storyData ? JSON.parse(storyData.textContent) : null;
+        } catch (e) {
+            console.error("Could not parse story blocks:", e);
+        }
+
+        scooperEditor = new EditorJS({
+            holder: "editorjs",
+            minHeight: 400,
+            tools: {
+                header: {
+                    class: window.Header,
+                    config: { placeholder: "Enter a heading", levels: [2, 3, 4], defaultLevel: 2 },
+                    inlineToolbar: ["link", "marker", "inlineCode"],
+                },
+                list: { class: window.List, inlineToolbar: ["link", "marker", "inlineCode"] },
+                quote: { class: window.Quote, inlineToolbar: true },
+                code: { class: window.CodeTool },
+                delimiter: { class: window.Delimiter },
+                warning: {
+                    class: window.Warning,
+                    inlineToolbar: true,
+                    config: { titlePlaceholder: "Note title", messagePlaceholder: "Say something warm..." },
+                },
+                table: { class: window.Table, inlineToolbar: true },
+                embed: { class: window.Embed, config: { services: { youtube: true, vimeo: true } } },
+                image: {
+                    class: window.ImageTool,
+                    config: {
+                        uploader: {
+                            async uploadByFile(file) {
+                                var fd = new FormData();
+                                fd.append("image", file);
+                                fd.append("csrf_token", CSRF_TOKEN);
+                                var res = await fetch("/cms/upload-image", { method: "POST", body: fd });
+                                var data = await res.json();
+                                if (data.success) {
+                                    return { success: 1, file: { url: data.file.url } };
+                                }
+                                return { success: 0 };
+                            },
+                        },
+                    },
+                },
+                marker: { class: window.Marker },
+                inlineCode: { class: window.InlineCode },
+            },
+            data: initialContent && initialContent.blocks ? initialContent : undefined,
+            onReady: function () {
+                startAutoSave();
+            },
+        });
+
+        // Sync editor JSON to the hidden field before submission
+        form.addEventListener("submit", function (event) {
+            if (form.dataset.contentSaved === "1") return;
+            event.preventDefault();
+            scooperEditor.save().then(function (output) {
+                contentField.value = JSON.stringify(output);
+                stopAutoSave();
+                localStorage.removeItem("scooper-draft-{{ story.id }}");
+                form.dataset.contentSaved = "1";
+                form.submit();
+            });
+        });
+    });
+
+    function saveDraft() {
+        if (!scooperEditor) return;
+        scooperEditor.save().then(function (output) {
+            localStorage.setItem(
+                "scooper-draft-{{ story.id }}",
+                JSON.stringify({ content: output, timestamp: Date.now() }),
+            );
+        });
+    }
+
+    function startAutoSave() {
+        if (!saveInterval) {
+            saveInterval = setInterval(saveDraft, 30000);
+        }
+    }
+
+    function stopAutoSave() {
+        if (saveInterval) {
+            clearInterval(saveInterval);
+            saveInterval = null;
+        }
+    }
+</script>
+{% else %}
 <script>
     // Initialize Quill Editor with existing content
     document.addEventListener("DOMContentLoaded", function () {
@@ -276,8 +424,8 @@
                     if (
                         confirm(
                             "We found a draft of this story from " +
-                                new Date(draft.timestamp).toLocaleString() +
-                                ". Restore it?",
+                            new Date(draft.timestamp).toLocaleString() +
+                            ". Restore it?",
                         )
                     ) {
                         document.getElementById("title").value =
@@ -292,8 +440,7 @@
                             document.getElementById("content").value =
                                 data.content || "";
                         }
-                        document.getElementById("author").value =
-                            data.author || "";
+                        document.getElementById("author").value = data.author || "";
                         document.getElementById("category").value =
                             data.category || "";
                         if (data.published !== undefined) {
@@ -336,5 +483,6 @@
         startAutoSave();
     })();
 </script>
+{% endif %}
 </body>
 </html>

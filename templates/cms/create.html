@@ -1,12 +1,19 @@
 {% include "partials/cms_head.html" %}
 {% include "partials/cms_chrome.html" %}
 
-<!-- Quill Rich Text Editor (MIT license) -->
-<link
-    href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css"
-    rel="stylesheet"
-/>
-<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js" defer></script>
+<!-- Editor.js block editor (Apache-2.0) -->
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2/dist/editorjs.umd.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/header@2" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/list@1" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@2" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/code@2" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@1" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/image@2" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/table@2" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@2" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@1" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/inline-code@1" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/warning@1" defer></script>
 
 <div class="cms-content">
     <form
@@ -47,15 +54,17 @@
 
         <div class="form-group">
             <label for="content">Content *</label>
+            <input type="hidden" name="content_format" id="content-format" value="editorjs" />
             <textarea
                 id="content"
                 name="content"
                 style="display: none"
             ></textarea>
-            <div id="quill-editor" style="height: 500px; margin-bottom: 10px"></div>
+            <div id="editorjs" class="editorjs-container"></div>
             <p class="hint">
-                Rich text editor with support for images, formatting, lists,
-                and more.
+                Block editor: click the <strong>+</strong> for headings, lists,
+                quotes, code, images, tables and more. Select text for inline
+                formatting.
             </p>
         </div>
 
@@ -116,178 +125,177 @@
 
 <script src="/static/js/script.js" defer></script>
 <script>
-    // Initialize Quill Editor
+    var CSRF_TOKEN = "{{ csrf_token }}";
+    var scooperEditor = null;
+    var saveInterval = null;
+
+    // ==========================================================================
+    // Editor.js block editor
+    // ==========================================================================
     document.addEventListener("DOMContentLoaded", function () {
-        if (typeof Quill === "undefined") {
-            // Editor library unreachable - fall back to the raw textarea
-            document.getElementById("quill-editor").style.display = "none";
-            var textarea = document.getElementById("content");
-            textarea.style.display = "";
-            textarea.style.minHeight = "300px";
+        var container = document.getElementById("editorjs");
+        var contentField = document.getElementById("content");
+        var formatField = document.getElementById("content-format");
+        var form = document.querySelector("form");
+
+        if (typeof window.EditorJS === "undefined") {
+            // Editor library unreachable - fall back to raw HTML textarea
+            container.style.display = "none";
+            contentField.style.display = "";
+            contentField.style.minHeight = "300px";
+            formatField.value = "html";
+            loadDraft();
+            startAutoSave();
             return;
         }
-        var quill = new Quill("#quill-editor", {
-            theme: "snow",
+
+        scooperEditor = new EditorJS({
+            holder: "editorjs",
             placeholder: "Write your story here...",
-            modules: {
-                toolbar: [
-                    [{ header: [1, 2, 3, 4, 5, 6, false] }],
-                    ["bold", "italic", "underline", "strike"],
-                    ["blockquote", "code-block"],
-                    [{ list: "ordered" }, { list: "bullet" }],
-                    [{ script: "sub" }, { script: "super" }],
-                    [{ indent: "-1" }, { indent: "+1" }],
-                    [{ direction: "rtl" }],
-                    [{ size: ["small", false, "large", "huge"] }],
-                    [{ color: [] }, { background: [] }],
-                    [{ font: [] }],
-                    [{ align: [] }],
-                    ["link", "image", "video"],
-                    ["clean"],
-                ],
+            minHeight: 400,
+            tools: {
+                header: {
+                    class: window.Header,
+                    config: { placeholder: "Enter a heading", levels: [2, 3, 4], defaultLevel: 2 },
+                    inlineToolbar: ["link", "marker", "inlineCode"],
+                },
+                list: { class: window.List, inlineToolbar: ["link", "marker", "inlineCode"] },
+                quote: { class: window.Quote, inlineToolbar: true },
+                code: { class: window.CodeTool },
+                delimiter: { class: window.Delimiter },
+                warning: {
+                    class: window.Warning,
+                    inlineToolbar: true,
+                    config: { titlePlaceholder: "Note title", messagePlaceholder: "Say something warm..." },
+                },
+                table: { class: window.Table, inlineToolbar: true },
+                embed: { class: window.Embed, config: { services: { youtube: true, vimeo: true } } },
+                image: {
+                    class: window.ImageTool,
+                    config: {
+                        uploader: {
+                            async uploadByFile(file) {
+                                var fd = new FormData();
+                                fd.append("image", file);
+                                fd.append("csrf_token", CSRF_TOKEN);
+                                var res = await fetch("/cms/upload-image", { method: "POST", body: fd });
+                                var data = await res.json();
+                                if (data.success) {
+                                    return { success: 1, file: { url: data.file.url } };
+                                }
+                                return { success: 0 };
+                            },
+                        },
+                    },
+                },
+                marker: { class: window.Marker },
+                inlineCode: { class: window.InlineCode },
+            },
+            onReady: function () {
+                loadDraft();
+                startAutoSave();
             },
         });
-        window.quill = quill;
 
-        // Sync Quill content to hidden textarea before form submission
-        var form = document.querySelector("form");
-        if (form) {
-            form.addEventListener("submit", function () {
-                document.getElementById("content").value = quill.root.innerHTML;
+        // Sync editor JSON to the hidden field before submission
+        form.addEventListener("submit", function (event) {
+            if (form.dataset.contentSaved === "1") return;
+            event.preventDefault();
+            scooperEditor.save().then(function (output) {
+                contentField.value = JSON.stringify(output);
+                stopAutoSave();
+                localStorage.removeItem("scooper-draft-new");
+                form.dataset.contentSaved = "1";
+                form.submit();
             });
-        }
-
-        // Handle image uploads
-        quill.getModule("toolbar").addHandler("image", function () {
-            var input = document.createElement("input");
-            input.setAttribute("type", "file");
-            input.setAttribute("accept", "image/*");
-            input.onchange = function () {
-                var file = this.files[0];
-                if (file) {
-                    var reader = new FileReader();
-                    reader.onload = function (e) {
-                        var range = quill.getSelection();
-                        quill.insertEmbed(range.index, "image", e.target.result);
-                    };
-                    reader.readAsDataURL(file);
-                }
-            };
-            input.click();
         });
     });
 
     // ==========================================================================
     // Auto-save draft to localStorage
     // ==========================================================================
-    (function () {
-        var draftKey = "scooper-draft-new";
-        var saveInterval = 30000; // 30 seconds
-        var saveTimeout;
+    function getFormData() {
+        return {
+            title: document.getElementById("title").value,
+            excerpt: document.getElementById("excerpt").value,
+            author: document.getElementById("author").value,
+            category: document.getElementById("category").value,
+            published: document.querySelector('input[name="published"]').checked,
+        };
+    }
 
-        // Get all form data as an object
-        function getFormData() {
-            var quill = window.quill;
-            return {
-                title: document.getElementById("title").value,
-                excerpt: document.getElementById("excerpt").value,
-                content: quill
-                    ? quill.root.innerHTML
-                    : document.getElementById("content").value,
-                author: document.getElementById("author").value,
-                category: document.getElementById("category").value,
-                published: document.querySelector(
-                    'input[name="published"]',
-                ).checked,
-            };
-        }
+    function persistDraft(data) {
+        localStorage.setItem(
+            "scooper-draft-new",
+            JSON.stringify({ data: data, timestamp: Date.now() }),
+        );
+    }
 
-        // Save draft to localStorage
-        function saveDraft() {
-            var data = getFormData();
-            // Only save if title is not empty (basic validation)
-            if (data.title && data.title.trim()) {
-                localStorage.setItem(
-                    draftKey,
-                    JSON.stringify({
-                        data: data,
-                        timestamp: Date.now(),
-                    }),
-                );
-            }
-        }
-
-        // Load draft from localStorage
-        function loadDraft() {
-            var saved = localStorage.getItem(draftKey);
-            if (!saved) return;
-
-            try {
-                var draft = JSON.parse(saved);
-                var data = draft.data;
-
-                // Always ask before restoring on create page
-                if (
-                    confirm(
-                        "We found a draft story from " +
-                            new Date(draft.timestamp).toLocaleString() +
-                            ". Restore it?",
-                    )
-                ) {
-                    document.getElementById("title").value = data.title || "";
-                    document.getElementById("excerpt").value = data.excerpt || "";
-                    if (window.quill) {
-                        window.quill.clipboard.dangerouslyPasteHTML(
-                            data.content || "",
-                        );
-                    } else {
-                        document.getElementById("content").value =
-                            data.content || "";
-                    }
-                    document.getElementById("author").value = data.author || "";
-                    document.getElementById("category").value =
-                        data.category || "";
-                    if (data.published !== undefined) {
-                        document.querySelector(
-                            'input[name="published"]',
-                        ).checked = data.published;
-                    }
-                } else {
-                    // User declined, clear the draft
-                    localStorage.removeItem(draftKey);
-                }
-            } catch (e) {
-                console.error("Error loading draft:", e);
-            }
-        }
-
-        // Start auto-save
-        function startAutoSave() {
-            saveDraft();
-            saveTimeout = setInterval(saveDraft, saveInterval);
-        }
-
-        // Stop auto-save
-        function stopAutoSave() {
-            if (saveTimeout) {
-                clearInterval(saveTimeout);
-                saveTimeout = null;
-            }
-        }
-
-        // Clear draft on successful submission
-        var form = document.querySelector("form");
-        if (form) {
-            form.addEventListener("submit", function () {
-                stopAutoSave();
-                localStorage.removeItem(draftKey);
+    function saveDraft() {
+        var data = getFormData();
+        // Only save if title is not empty (basic validation)
+        if (!data.title || !data.title.trim()) return;
+        if (scooperEditor) {
+            scooperEditor.save().then(function (output) {
+                data.content = output;
+                persistDraft(data);
             });
+        } else {
+            data.content = document.getElementById("content").value;
+            persistDraft(data);
         }
+    }
 
-        // Initialize
-        loadDraft();
-        startAutoSave();
-    })();
+    function loadDraft() {
+        var saved = localStorage.getItem("scooper-draft-new");
+        if (!saved) return;
+
+        try {
+            var draft = JSON.parse(saved);
+            var data = draft.data;
+
+            // Always ask before restoring on create page
+            if (
+                confirm(
+                    "We found a draft story from " +
+                    new Date(draft.timestamp).toLocaleString() +
+                    ". Restore it?",
+                )
+            ) {
+                document.getElementById("title").value = data.title || "";
+                document.getElementById("excerpt").value = data.excerpt || "";
+                document.getElementById("author").value = data.author || "";
+                document.getElementById("category").value = data.category || "";
+                if (data.published !== undefined) {
+                    document.querySelector('input[name="published"]').checked = data.published;
+                }
+                if (data.content && typeof data.content === "object" && scooperEditor) {
+                    scooperEditor.blocks.render(data.content);
+                } else if (typeof data.content === "string" && !scooperEditor) {
+                    document.getElementById("content").value = data.content;
+                }
+            } else {
+                // User declined, clear the draft
+                localStorage.removeItem("scooper-draft-new");
+            }
+        } catch (e) {
+            console.error("Error loading draft:", e);
+        }
+    }
+
+    function startAutoSave() {
+        saveDraft();
+        if (!saveInterval) {
+            saveInterval = setInterval(saveDraft, 30000);
+        }
+    }
+
+    function stopAutoSave() {
+        if (saveInterval) {
+            clearInterval(saveInterval);
+            saveInterval = null;
+        }
+    }
 </script>
 </body>
 </html>
