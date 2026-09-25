@@ -109,6 +109,12 @@ def restore_database(backup_path):
     try:
         # Use shutil.copy2 to preserve metadata
         shutil.copy2(backup_path, DB_PATH)
+        # Remove WAL sidecar files: a leftover -wal would be replayed
+        # on top of the restored file, resurrecting pre-backup data
+        for suffix in ("-wal", "-shm"):
+            sidecar = DB_PATH + suffix
+            if os.path.exists(sidecar):
+                os.remove(sidecar)
         print(f"Database restored from {backup_path}")
         return True
     except Exception as e:

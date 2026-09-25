@@ -1,732 +1,339 @@
-<!doctype html>
-<html lang="en" data-theme="{{ theme }}" data-font="{{ font_family }}">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{{ page_title }} - {{ site_title }}</title>
+{% include "partials/cms_head.html" %}
+{% include "partials/cms_chrome.html" %}
 
-        <!-- Performance: Preload key fonts -->
-        <link
-            rel="preload"
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-            as="style"
-            onload="this.rel = 'stylesheet'"
+<div class="cms-content">
+    <form action="/cms/settings" method="post" class="settings-form">
+        <input
+            type="hidden"
+            name="csrf_token"
+            value="{{ csrf_token }}"
         />
-        <link
-            rel="preload"
-            href="https://fonts.googleapis.com"
-            as="font"
-            crossorigin
-        />
-        <link
-            rel="preload"
-            href="https://fonts.gstatic.com"
-            as="font"
-            crossorigin
-        />
-        <noscript>
-            <link
-                href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-                rel="stylesheet"
-            />
-        </noscript>
+        <div class="settings-section">
+            <h2>Site Settings</h2>
 
-        <!-- Performance: Critical CSS inlined -->
-        <style>
-            *,
-            *::before,
-            *::after {
-                box-sizing: border-box;
-                margin: 0;
-                padding: 0;
-            }
-            html {
-                scroll-behavior: smooth;
-            }
-            body {
-                font-family: var(--font-body);
-                line-height: 1.6;
-                color: var(--paper-text);
-                background-color: var(--paper-bg);
-                transition:
-                    background-color 0.3s ease,
-                    color 0.3s ease;
-            }
-            a {
-                color: var(--paper-link-color);
-                text-decoration: none;
-                transition: color 0.2s ease;
-            }
-            a:hover {
-                color: var(--paper-link-hover);
-                text-decoration: underline;
-            }
-            img {
-                max-width: 100%;
-                height: auto;
-                aspect-ratio: attr(width) / attr(height);
-            }
-            img[src=""] {
-                display: none;
-            }
-            .paper-header,
-            .paper-nav,
-            .story-card,
-            .story-image,
-            .featured-image-container,
-            .cms-header,
-            .cms-sidebar,
-            .cms-nav {
-                contain: layout paint;
-            }
-            .story-card {
-                contain: layout paint;
-                min-height: 400px;
-            }
-            .story-image img,
-            .featured-image {
-                aspect-ratio: 16/9;
-                object-fit: cover;
-            }
-            .featured-image-container {
-                min-height: 300px;
-            }
-            .paper-header {
-                min-height: 80px;
-            }
-        </style>
+            <div class="form-group">
+                <label for="site_title">Site Title</label>
+                <input
+                    type="text"
+                    id="site_title"
+                    name="site_title"
+                    value="{{ site_title }}"
+                    required
+                    placeholder="Your site name"
+                />
+            </div>
 
-        <!-- Performance: Load non-critical CSS asynchronously -->
-        <link
-            rel="preload"
-            href="/static/css/style.css"
-            as="style"
-            onload="this.rel = 'stylesheet'"
-        />
-        <noscript>
-            <link rel="stylesheet" href="/static/css/style.css" />
-        </noscript>
-    </head>
-    <body class="theme-{{ theme }} cms-theme">
-        <!-- Mobile Sidebar Overlay -->
-        <div class="cms-sidebar-overlay" onclick="closeMobileSidebar()"></div>
+            <div class="form-group">
+                <label for="site_description">Site Description</label>
+                <input
+                    type="text"
+                    id="site_description"
+                    name="site_description"
+                    value="{{ site_description_value }}"
+                    placeholder="Short tagline for your site"
+                />
+            </div>
 
-        <!-- Mobile Bottom Navigation -->
-        <nav class="cms-bottom-nav">
-            <ul class="cms-nav">
-                <li>
-                    <a href="/cms/dashboard" class="nav-item">
-                        <span class="nav-icon">&#128196;</span>
-                        <span>Dashboard</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/cms/stories" class="nav-item">
-                        <span class="nav-icon">&#128218;</span>
-                        <span>Stories</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/cms/create" class="nav-item">
-                        <span class="nav-icon">&#9998;</span>
-                        <span>New</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/cms/settings" class="nav-item active">
-                        <span class="nav-icon">&#9881;</span>
-                        <span>Settings</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/" class="nav-item view-paper-btn" target="_blank">
-                        <span class="nav-icon">&#128065;</span>
-                        <span>View</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-
-        <div class="cms-layout">
-            <!-- Sidebar -->
-            <nav class="cms-sidebar">
-                <div class="cms-logo">
-                    <a href="/">
-                        <span class="logo-icon">&#128394;</span>
-                        <span class="logo-text">Pencil</span>
-                    </a>
-                </div>
-                <ul class="cms-nav">
-                    <li>
-                        <a href="/cms/dashboard" class="nav-item">
-                            <span class="nav-icon">&#128196;</span>
-                            <span>Dashboard</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/cms/stories" class="nav-item">
-                            <span class="nav-icon">&#128218;</span>
-                            <span>Stories</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/cms/create" class="nav-item">
-                            <span class="nav-icon">&#9998;</span>
-                            <span>New Story</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/cms/settings" class="nav-item active">
-                            <span class="nav-icon">&#9881;</span>
-                            <span>Settings</span>
-                        </a>
-                    </li>
-                </ul>
-                <div class="cms-footer">
-                    <a href="/" class="view-paper-btn" target="_blank">
-                        <span class="nav-icon">&#128196;</span>
-                        <span>View Paper</span>
-                    </a>
-                </div>
-            </nav>
-
-            <!-- Main Content -->
-            <main class="cms-main">
-                <header class="cms-header">
-                    <div class="header-left">
-                        <button
-                            class="menu-toggle"
-                            onclick="toggleMobileSidebar()"
-                            title="Toggle sidebar"
-                        >
-                            &#9776;
-                        </button>
-                        <h1>{{ page_title }}</h1>
-                    </div>
-                    <div class="header-right">
-                        <button
-                            class="theme-toggle"
-                            onclick="toggleTheme()"
-                            title="Toggle dark/light mode"
-                        >
-                            <span id="theme-icon">{{ theme_icon }}</span>
-                        </button>
-                    </div>
-                </header>
-
-                <div class="cms-content">
-                    <form
-                        action="/cms/settings"
-                        method="post"
-                        class="settings-form"
+            <div class="form-group">
+                <label>Theme</label>
+                <div class="theme-selector">
+                    <select
+                        id="theme-select"
+                        name="theme"
+                        class="theme-dropdown"
                     >
-                        <input
-                            type="hidden"
-                            name="csrf_token"
-                            value="{{ csrf_token }}"
-                        />
-                        <div class="settings-section">
-                            <h2>Site Settings</h2>
-
-                            <div class="form-group">
-                                <label for="site_title">Site Title</label>
-                                <input
-                                    type="text"
-                                    id="site_title"
-                                    name="site_title"
-                                    value="{{ site_title }}"
-                                    required
-                                    placeholder="Your site name"
-                                />
-                            </div>
-
-                            <div class="form-group">
-                                <label for="site_description"
-                                    >Site Description</label
-                                >
-                                <input
-                                    type="text"
-                                    id="site_description"
-                                    name="site_description"
-                                    value="{{ site_description_value }}"
-                                    placeholder="Short tagline for your site"
-                                />
-                            </div>
-
-                            <div class="form-group">
-                                <label>Theme</label>
-                                <div class="theme-selector">
-                                    <select
-                                        id="theme-select"
-                                        name="theme"
-                                        class="theme-dropdown"
-                                    >
-                                        <option
-                                            value="light"
-                                            {%
-                                            if
-                                            theme=""
-                                            ="light"
-                                            %}selected{%
-                                            endif
-                                            %}
-                                        >
-                                            Light
-                                        </option>
-                                        <option
-                                            value="dark"
-                                            {%
-                                            if
-                                            theme=""
-                                            ="dark"
-                                            %}selected{%
-                                            endif
-                                            %}
-                                        >
-                                            Dark
-                                        </option>
-                                        <option
-                                            value="rose-pine-dawn"
-                                            {%
-                                            if
-                                            theme=""
-                                            ="rose-pine-dawn"
-                                            %}selected{%
-                                            endif
-                                            %}
-                                        >
-                                            Rose Pine Dawn
-                                        </option>
-                                        <option
-                                            value="rose-pine"
-                                            {%
-                                            if
-                                            theme=""
-                                            ="rose-pine"
-                                            %}selected{%
-                                            endif
-                                            %}
-                                        >
-                                            Rose Pine
-                                        </option>
-                                        <option
-                                            value="catpuccin-latte"
-                                            {%
-                                            if
-                                            theme=""
-                                            ="catpuccin-latte"
-                                            %}selected{%
-                                            endif
-                                            %}
-                                        >
-                                            Catpuccin Latte
-                                        </option>
-                                        <option
-                                            value="catpuccin-frappe"
-                                            {%
-                                            if
-                                            theme=""
-                                            ="catpuccin-frappe"
-                                            %}selected{%
-                                            endif
-                                            %}
-                                        >
-                                            Catpuccin Frappe
-                                        </option>
-                                        <option
-                                            value="catpuccin-macchiato"
-                                            {%
-                                            if
-                                            theme=""
-                                            ="catpuccin-macchiato"
-                                            %}selected{%
-                                            endif
-                                            %}
-                                        >
-                                            Catpuccin Macchiato
-                                        </option>
-                                        <option
-                                            value="catpuccin-mocha"
-                                            {%
-                                            if
-                                            theme=""
-                                            ="catpuccin-mocha"
-                                            %}selected{%
-                                            endif
-                                            %}
-                                        >
-                                            Catpuccin Mocha
-                                        </option>
-                                        <option
-                                            value="glass"
-                                            {%
-                                            if
-                                            theme=""""
-                                            ="glass"
-                                            %}selected{%
-                                            endif
-                                            %}
-                                        >
-                                            Glass Light
-                                        </option>
-                                        <option
-                                            value="glass-dark"
-                                            {%
-                                            if
-                                            theme=""""
-                                            ="glass-dark"
-                                            %}selected{%
-                                            endif
-                                            %}
-                                        >
-                                            Glass Dark
-                                        </option>
-                                    </select>
-                                    <div
-                                        id="theme-preview"
-                                        class="theme-preview"
-                                    >
-                                        <div class="preview-container">
-                                            <div
-                                                class="preview-header"
-                                                id="preview-header"
-                                            ></div>
-                                            <div
-                                                class="preview-body"
-                                                id="preview-body"
-                                            ></div>
-                                            <div
-                                                class="preview-footer"
-                                                id="preview-footer"
-                                            ></div>
-                                        </div>
-                                        <div class="preview-accents">
-                                            <div
-                                                class="preview-btn"
-                                                id="preview-btn"
-                                            ></div>
-                                            <div
-                                                class="preview-accent"
-                                                id="preview-accent"
-                                            ></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <option value="light" {% if theme == "light" %}selected{% endif %}>
+                            Vanilla Cream
+                        </option>
+                        <option value="dark" {% if theme == "dark" %}selected{% endif %}>
+                            Midnight Chocolate
+                        </option>
+                        <option value="rose-pine-dawn" {% if theme == "rose-pine-dawn" %}selected{% endif %}>
+                            Rose Pine Dawn
+                        </option>
+                        <option value="rose-pine" {% if theme == "rose-pine" %}selected{% endif %}>
+                            Rose Pine
+                        </option>
+                        <option value="catpuccin-latte" {% if theme == "catpuccin-latte" %}selected{% endif %}>
+                            Catppuccin Latte
+                        </option>
+                        <option value="catpuccin-frappe" {% if theme == "catpuccin-frappe" %}selected{% endif %}>
+                            Catppuccin Frappe
+                        </option>
+                        <option value="catpuccin-macchiato" {% if theme == "catpuccin-macchiato" %}selected{% endif %}>
+                            Catppuccin Macchiato
+                        </option>
+                        <option value="catpuccin-mocha" {% if theme == "catpuccin-mocha" %}selected{% endif %}>
+                            Catppuccin Mocha
+                        </option>
+                    </select>
+                    <div id="theme-preview" class="theme-preview">
+                        <div class="preview-container">
+                            <div class="preview-header" id="preview-header"></div>
+                            <div class="preview-body" id="preview-body"></div>
+                            <div class="preview-footer" id="preview-footer"></div>
                         </div>
-
-                        <div class="form-group">
-                            <label>Font Family</label>
-                            <div class="font-selector">
-                                <select
-                                    id="font-select"
-                                    name="font_family"
-                                    class="font-dropdown"
-                                >
-                                    <option
-                                        value="serif"
-                                        {%
-                                        if
-                                        font_family=""
-                                        ="serif"
-                                        %}selected{%
-                                        endif
-                                        %}
-                                    >
-                                        Serif
-                                    </option>
-                                    <option
-                                        value="sans"
-                                        {%
-                                        if
-                                        font_family=""
-                                        ="sans"
-                                        %}selected{%
-                                        endif
-                                        %}
-                                    >
-                                        Sans Serif
-                                    </option>
-                                </select>
-                            </div>
+                        <div class="preview-accents">
+                            <div class="preview-btn" id="preview-btn"></div>
+                            <div class="preview-accent" id="preview-accent"></div>
                         </div>
-
-                        <div class="settings-section">
-                            <h2>Categories</h2>
-                            <input type="hidden" id="action" name="action" />
-
-                            <div class="form-group">
-                                <label for="new_category"
-                                    >Add New Category</label
-                                >
-                                <div class="category-add">
-                                    <input
-                                        type="text"
-                                        id="new_category"
-                                        name="new_category"
-                                        placeholder="Enter category name"
-                                    />
-                                    <button
-                                        type="button"
-                                        class="btn btn-small btn-primary"
-                                        onclick="
-                                            setAction('add_category');
-                                            hasUnsavedChanges = false;
-                                            document
-                                                .querySelector('form')
-                                                .submit();
-                                        "
-                                    >
-                                        <span>&#10010;</span> Add
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Existing Categories</label>
-                                <div class="category-list">
-                                    {% for cat in categories %}
-                                    <div class="category-item">
-                                        <span class="category-name"
-                                            >{{ cat.name }}</span
-                                        >
-                                        <div class="category-actions">
-                                            <button
-                                                type="button"
-                                                class="btn btn-tiny btn-secondary edit-category-btn"
-                                                data-category-id="{{ cat.id }}"
-                                                data-category-name="{{ cat.name }}"
-                                            >
-                                                <span>&#9998;</span> Edit
-                                            </button>
-                                            <button
-                                                type="button"
-                                                class="btn btn-tiny btn-danger delete-category-btn"
-                                                data-category-id="{{ cat.id }}"
-                                                data-category-name="{{ cat.name }}"
-                                            >
-                                                <span>&#128465;</span> Delete
-                                            </button>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-
-                            <!-- Hidden fields for category edit/delete -->
-                            <input
-                                type="hidden"
-                                id="edit_category_id"
-                                name="edit_category_id"
-                            />
-                            <input
-                                type="hidden"
-                                id="edit_category_name"
-                                name="edit_category_name"
-                            />
-                            <input
-                                type="hidden"
-                                id="delete_category_id"
-                                name="delete_category_id"
-                            />
-                        </div>
-
-                        <div class="form-actions">
-                            <button
-                                type="submit"
-                                class="btn btn-primary"
-                                name="action"
-                                value="save_settings"
-                            >
-                                <span>&#10003;</span> Save Settings
-                            </button>
-                            <a href="/cms/dashboard" class="btn btn-secondary"
-                                >Cancel</a
-                            >
-                        </div>
-                    </form>
+                    </div>
                 </div>
-            </main>
+            </div>
         </div>
 
-        <!-- Performance: Load JavaScript with defer -->
-        <script src="/static/js/script.js" defer></script>
-        <script>
-            function setAction(val) {
-                document.getElementById("action").value = val;
-            }
+        <div class="settings-section">
+            <h2>Categories</h2>
+            <input type="hidden" id="action" name="action" />
 
-            // Theme selection - preview on dropdown change
-            document.addEventListener("DOMContentLoaded", function () {
-                const themeSelect = document.getElementById("theme-select");
-                const previewHeader = document.getElementById("preview-header");
-                const previewBody = document.getElementById("preview-body");
-                const previewFooter = document.getElementById("preview-footer");
-                const previewBtn = document.getElementById("preview-btn");
-                const previewAccent = document.getElementById("preview-accent");
+            <div class="form-group">
+                <label for="new_category">Add New Category</label>
+                <div class="category-add">
+                    <input
+                        type="text"
+                        id="new_category"
+                        name="new_category"
+                        placeholder="Enter category name"
+                    />
+                    <button
+                        type="button"
+                        class="btn btn-small btn-primary"
+                        onclick="
+                            setAction('add_category');
+                            hasUnsavedChanges = false;
+                            document
+                                .querySelector('form')
+                                .submit();
+                        "
+                    >
+                        Add
+                    </button>
+                </div>
+            </div>
 
-                // Theme color definitions for preview - header, body, footer, button, accent
-                const themeColors = {
-                    light: {
-                        header: "#ffffff",
-                        body: "#f5f5f5",
-                        footer: "#2a2a2a",
-                        btn: "#0066cc",
-                        accent: "#0066cc",
-                    },
-                    dark: {
-                        header: "#2a2a2a",
-                        body: "#1a1a1a",
-                        footer: "#0a0a0a",
-                        btn: "#4d90fe",
-                        accent: "#4d90fe",
-                    },
-                    "rose-pine-dawn": {
-                        header: "#fffaf3",
-                        body: "#f4ede8",
-                        footer: "#575279",
-                        btn: "#ea9d34",
-                        accent: "#ea9d34",
-                    },
-                    "rose-pine": {
-                        header: "#1f1d2e",
-                        body: "#191724",
-                        footer: "#191724",
-                        btn: "#ebbcba",
-                        accent: "#f38ba8",
-                    },
-                    "catpuccin-latte": {
-                        header: "#ffffff",
-                        body: "#e6e9ef",
-                        footer: "#4c4f69",
-                        btn: "#88c0d0",
-                        accent: "#88c0d0",
-                    },
-                    "catpuccin-frappe": {
-                        header: "#303446",
-                        body: "#292c3c",
-                        footer: "#232634",
-                        btn: "#88c0d0",
-                        accent: "#f2cdcd",
-                    },
-                    "catpuccin-macchiato": {
-                        header: "#24273a",
-                        body: "#1e1e2e",
-                        footer: "#181826",
-                        btn: "#88c0d0",
-                        accent: "#f5c2e7",
-                    },
-                    "catpuccin-mocha": {
-                        header: "#1e1e2e",
-                        body: "#181826",
-                        footer: "#11111b",
-                        btn: "#88c0d0",
-                        accent: "#f5e0dc",
-                    },
-                    glass: {
-                        header: "rgba(255, 255, 255, 0.9)",
-                        body: "rgba(245, 245, 250, 0.3)",
-                        footer: "rgba(20, 20, 40, 0.9)",
-                        btn: "#0095ff",
-                        accent: "#9333ea",
-                    },
-                    "glass-dark": {
-                        header: "rgba(20, 20, 40, 0.9)",
-                        body: "rgba(10, 10, 20, 0.4)",
-                        footer: "rgba(10, 10, 20, 0.95)",
-                        btn: "#4dabf7",
-                        accent: "#a21caf",
-                    },
-                };
+            <div class="form-group">
+                <label>Existing Categories</label>
+                <div class="category-list">
+                    {% for cat in categories %}
+                    <div class="category-item">
+                        <span class="category-name">{{ cat.name }}</span>
+                        <div class="category-actions">
+                            <button
+                                type="button"
+                                class="btn btn-tiny btn-secondary edit-category-btn"
+                                data-category-id="{{ cat.id }}"
+                                data-category-name="{{ cat.name }}"
+                            >
+                                Edit
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-tiny btn-danger delete-category-btn"
+                                data-category-id="{{ cat.id }}"
+                                data-category-name="{{ cat.name }}"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
 
-                function updateThemePreview(theme) {
-                    const colors = themeColors[theme] || themeColors["light"];
-                    previewHeader.style.backgroundColor = colors.header;
-                    previewBody.style.backgroundColor = colors.body;
-                    previewFooter.style.backgroundColor = colors.footer;
-                    previewBtn.style.backgroundColor = colors.btn;
-                    previewAccent.style.backgroundColor = colors.accent;
-                }
+            <!-- Hidden fields for category edit/delete -->
+            <input
+                type="hidden"
+                id="edit_category_id"
+                name="edit_category_id"
+            />
+            <input
+                type="hidden"
+                id="edit_category_name"
+                name="edit_category_name"
+            />
+            <input
+                type="hidden"
+                id="delete_category_id"
+                name="delete_category_id"
+            />
+        </div>
 
-                // Update preview on dropdown change
-                if (themeSelect) {
-                    themeSelect.addEventListener("change", function () {
-                        updateThemePreview(this.value);
-                    });
-                    // Initialize preview with current theme
-                    updateThemePreview(themeSelect.value);
-                }
+        <div class="form-actions">
+            <button
+                type="submit"
+                class="btn btn-primary"
+                name="action"
+                value="save_settings"
+            >
+                <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+                Save Settings
+            </button>
+            <a href="/cms/dashboard" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
 
-                // Sync theme to localStorage on form submit (so page reload picks it up)
-                const settingsForm = document.querySelector(".settings-form");
-                if (settingsForm) {
-                    settingsForm.addEventListener("submit", function () {
-                        const selectedTheme = themeSelect
-                            ? themeSelect.value
-                            : null;
-                        if (selectedTheme) {
-                            localStorage.setItem(
-                                "scooper-theme",
-                                selectedTheme,
-                            );
-                        }
-                    });
-                }
+    <div class="corner-mascot">
+        {% include "partials/illu_paint.html" %}
+    </div>
+</div>
+</main>
+</div>
 
-                // Category management handlers
-                // Edit category buttons
-                document
-                    .querySelectorAll(".edit-category-btn")
-                    .forEach(function (btn) {
-                        btn.addEventListener("click", function () {
-                            var categoryId =
-                                this.getAttribute("data-category-id");
-                            var categoryName =
-                                this.getAttribute("data-category-name");
-                            var newName = prompt(
-                                "Edit category name:",
-                                categoryName,
-                            );
-                            if (newName !== null && newName.trim() !== "") {
-                                document.getElementById(
-                                    "edit_category_id",
-                                ).value = categoryId;
-                                document.getElementById(
-                                    "edit_category_name",
-                                ).value = newName.trim();
-                                setAction("edit_category");
-                                hasUnsavedChanges = false;
-                                document.querySelector("form").submit();
-                            }
-                        });
-                    });
+<script src="/static/js/script.js" defer></script>
+<script>
+    function setAction(val) {
+        document.getElementById("action").value = val;
+    }
 
-                // Delete category buttons
-                document
-                    .querySelectorAll(".delete-category-btn")
-                    .forEach(function (btn) {
-                        btn.addEventListener("click", function () {
-                            var categoryId =
-                                this.getAttribute("data-category-id");
-                            var categoryName =
-                                this.getAttribute("data-category-name");
-                            if (
-                                confirm(
-                                    'Are you sure you want to delete "' +
-                                        categoryName +
-                                        '"? Stories using this category will keep their category name as text.',
-                                )
-                            ) {
-                                document.getElementById(
-                                    "delete_category_id",
-                                ).value = categoryId;
-                                setAction("delete_category");
-                                hasUnsavedChanges = false;
-                                document.querySelector("form").submit();
-                            }
-                        });
-                    });
+    // Theme selection - preview on dropdown change
+    document.addEventListener("DOMContentLoaded", function () {
+        const themeSelect = document.getElementById("theme-select");
+        const previewHeader = document.getElementById("preview-header");
+        const previewBody = document.getElementById("preview-body");
+        const previewFooter = document.getElementById("preview-footer");
+        const previewBtn = document.getElementById("preview-btn");
+        const previewAccent = document.getElementById("preview-accent");
+
+        // Theme color definitions for preview - header, body, footer, button, accent
+        const themeColors = {
+            light: {
+                header: "#fffaf4",
+                body: "#faf3ea",
+                footer: "#362529",
+                btn: "#d95d78",
+                accent: "#e0a458",
+            },
+            dark: {
+                header: "#2a1f26",
+                body: "#241b21",
+                footer: "#1c141a",
+                btn: "#e87f96",
+                accent: "#e8b465",
+            },
+            "rose-pine-dawn": {
+                header: "#fffaf3",
+                body: "#faf4ed",
+                footer: "#575279",
+                btn: "#d7827e",
+                accent: "#ea9d34",
+            },
+            "rose-pine": {
+                header: "#1f1d2e",
+                body: "#191724",
+                footer: "#26233a",
+                btn: "#eb6f92",
+                accent: "#f6c177",
+            },
+            "catpuccin-latte": {
+                header: "#ffffff",
+                body: "#eff1f5",
+                footer: "#4c4f69",
+                btn: "#ea76cb",
+                accent: "#df8e1d",
+            },
+            "catpuccin-frappe": {
+                header: "#3b4157",
+                body: "#303446",
+                footer: "#232634",
+                btn: "#f4b8e4",
+                accent: "#e5c890",
+            },
+            "catpuccin-macchiato": {
+                header: "#30344a",
+                body: "#24273a",
+                footer: "#1e2030",
+                btn: "#f5bde6",
+                accent: "#eed49f",
+            },
+            "catpuccin-mocha": {
+                header: "#2a2b3c",
+                body: "#1e1e2e",
+                footer: "#11111b",
+                btn: "#f5c2e7",
+                accent: "#f9e2af",
+            },
+        };
+
+        function updateThemePreview(theme) {
+            const colors = themeColors[theme] || themeColors["light"];
+            previewHeader.style.backgroundColor = colors.header;
+            previewBody.style.backgroundColor = colors.body;
+            previewFooter.style.backgroundColor = colors.footer;
+            previewBtn.style.backgroundColor = colors.btn;
+            previewAccent.style.backgroundColor = colors.accent;
+        }
+
+        // Update preview on dropdown change
+        if (themeSelect) {
+            themeSelect.addEventListener("change", function () {
+                updateThemePreview(this.value);
             });
-        </script>
-    </body>
+            // Initialize preview with current theme
+            updateThemePreview(themeSelect.value);
+        }
+
+        // Sync theme to localStorage on form submit (so page reload picks it up)
+        const settingsForm = document.querySelector(".settings-form");
+        if (settingsForm) {
+            settingsForm.addEventListener("submit", function () {
+                const selectedTheme = themeSelect ? themeSelect.value : null;
+                if (selectedTheme) {
+                    localStorage.setItem("scooper-theme", selectedTheme);
+                }
+            });
+        }
+
+        // Category management handlers
+        // Edit category buttons
+        document
+            .querySelectorAll(".edit-category-btn")
+            .forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    var categoryId =
+                        this.getAttribute("data-category-id");
+                    var categoryName =
+                        this.getAttribute("data-category-name");
+                    var newName = prompt("Edit category name:", categoryName);
+                    if (newName !== null && newName.trim() !== "") {
+                        document.getElementById(
+                            "edit_category_id",
+                        ).value = categoryId;
+                        document.getElementById(
+                            "edit_category_name",
+                        ).value = newName.trim();
+                        setAction("edit_category");
+                        hasUnsavedChanges = false;
+                        document.querySelector("form").submit();
+                    }
+                });
+            });
+
+        // Delete category buttons
+        document
+            .querySelectorAll(".delete-category-btn")
+            .forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    var categoryId =
+                        this.getAttribute("data-category-id");
+                    var categoryName =
+                        this.getAttribute("data-category-name");
+                    if (
+                        confirm(
+                            'Are you sure you want to delete "' +
+                                categoryName +
+                                '"? Stories using this category will keep their category name as text.',
+                        )
+                    ) {
+                        document.getElementById(
+                            "delete_category_id",
+                        ).value = categoryId;
+                        setAction("delete_category");
+                        hasUnsavedChanges = false;
+                        document.querySelector("form").submit();
+                    }
+                });
+            });
+    });
+</script>
+</body>
 </html>
