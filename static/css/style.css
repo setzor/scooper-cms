@@ -1212,6 +1212,60 @@ code {
     color: var(--primary);
 }
 
+/* ----- Editor.js block editor ----- */
+.editorjs-container {
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-sm);
+    min-height: 420px;
+    padding: 4px 0;
+}
+
+.editorjs-container .codex-editor {
+    font-family: var(--font-body);
+    color: var(--input-text);
+    line-height: 1.7;
+}
+
+/* Editor chrome adopts the cozy card look across light and dark themes */
+.editorjs-container .ce-toolbar,
+.editorjs-container .ce-inline-toolbar,
+.editorjs-container .ce-conversion-toolbar,
+.editorjs-container .ce-settings {
+    background: var(--card-bg);
+    border-color: var(--border) !important;
+    box-shadow: var(--shadow-md);
+    color: var(--text-secondary);
+    font-family: var(--font-ui);
+}
+
+.editorjs-container .ce-toolbar__plus,
+.editorjs-container .ce-inline-tool,
+.editorjs-container .ce-conversion-tool,
+.editorjs-container .ce-inline-tool input {
+    color: var(--text-secondary);
+}
+
+.editorjs-container .ce-toolbar__plus:hover,
+.editorjs-container .ce-inline-tool:hover,
+.editorjs-container .ce-inline-tool--active,
+.editorjs-container .ce-conversion-tool:hover {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.editorjs-container .cdx-marker {
+    background: var(--honey-soft);
+    color: inherit;
+    padding: 0 3px;
+    border-radius: 3px;
+}
+
+.editorjs-container .ce-toolbar__plus::before,
+.editorjs-container .ce-toolbar__plus::after {
+    background: currentColor;
+}
+
 /* ==========================================================================
    Stories page: filters, table, pagination
    ========================================================================== */
@@ -2018,6 +2072,106 @@ a.page-link:hover {
 
 .story-content a {
     text-decoration: underline;
+}
+
+/* Block-editor content (Editor.js render output) */
+.story-content h4 {
+    margin: 1.3em 0 0.5em;
+    font-size: 1.1rem;
+}
+
+.story-content mark {
+    background: var(--honey-soft);
+    color: inherit;
+    padding: 0 3px;
+    border-radius: 3px;
+}
+
+.story-content pre code {
+    background: none;
+    padding: 0;
+}
+
+.story-content hr {
+    border: none;
+    border-top: 2px dashed var(--border);
+    margin: 2em auto;
+    width: 60%;
+}
+
+.story-content figure {
+    margin: 1.5em 0;
+}
+
+.story-content figure img {
+    width: 100%;
+    margin: 0;
+}
+
+.story-content figcaption {
+    margin-top: 8px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.story-content figure.story-figure--wide {
+    width: 100%;
+}
+
+.story-content blockquote footer {
+    margin-top: 6px;
+    font-size: 0.85rem;
+    font-style: normal;
+    color: var(--text-muted);
+}
+
+.story-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5em 0;
+    font-size: 0.95rem;
+}
+
+.story-content th,
+.story-content td {
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.story-content th {
+    background: var(--bg);
+    font-family: var(--font-ui);
+    font-weight: 700;
+}
+
+.story-warning {
+    margin: 1.5em 0;
+    padding: 14px 18px;
+    background: var(--honey-soft);
+    border-left: 4px solid var(--honey);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.story-warning strong {
+    display: block;
+    font-family: var(--font-ui);
+}
+
+.story-warning p {
+    margin: 4px 0 0;
+}
+
+.story-embed {
+    margin: 1.5em 0;
+}
+
+.story-embed iframe {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: none;
+    border-radius: var(--radius-sm);
 }
 
 .preview-notice {
