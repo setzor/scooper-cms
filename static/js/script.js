@@ -52,13 +52,20 @@ function updateThemeIcon(theme) {
 // Initialize theme from localStorage or server preference
 function initTheme() {
     // Check localStorage first
-    const savedTheme = localStorage.getItem('scooper-theme');
+    let savedTheme = localStorage.getItem('scooper-theme');
+    if (savedTheme === 'glass') {
+        savedTheme = 'light';
+        localStorage.setItem('scooper-theme', savedTheme);
+    } else if (savedTheme === 'glass-dark') {
+        savedTheme = 'dark';
+        localStorage.setItem('scooper-theme', savedTheme);
+    }
     if (savedTheme) {
         document.documentElement.setAttribute('data-theme', savedTheme);
         updateThemeIcon(savedTheme);
         return;
     }
-    
+
     // If no localStorage preference, use the server's theme setting
     // This is already set in the HTML by the server
     const currentTheme = document.documentElement.getAttribute('data-theme');
@@ -88,11 +95,16 @@ function setTheme(theme) {
 // Mark active navigation item
 document.addEventListener('DOMContentLoaded', function() {
     initTheme();
-    
+
     // Highlight active nav item in CMS
     const navItems = document.querySelectorAll('.cms-nav .nav-item');
-    const currentPath = window.location.pathname;
-    
+    let currentPath = window.location.pathname;
+
+    // Editing a story counts as being in the New Story section
+    if (currentPath.startsWith('/cms/edit/')) {
+        currentPath = '/cms/create';
+    }
+
     navItems.forEach(item => {
         const href = item.getAttribute('href');
         // Simple path matching

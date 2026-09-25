@@ -6,12 +6,14 @@
         <title>{{ meta_title }}</title>
         <meta name="description" content="{{ meta_description }}" />
 
-        <!-- Fonts: Nunito (UI), Playfair Display (headings), Lora (body) -->
+        <!-- Fonts: Playfair Display (headings), Nunito (everything else) -->
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
-            rel="stylesheet"
+            rel="preload"
             href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Nunito:wght@400;600;700&display=swap"
+            as="style"
+            onload="this.rel = 'stylesheet'"
         />
         <noscript>
             <link

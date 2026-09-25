@@ -1092,46 +1092,51 @@ code {
 }
 
 /* ----- Quill editor ----- */
-#quill-editor {
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: var(--radius-sm);
-    color: var(--input-text);
-}
-
 .ql-toolbar.ql-snow {
-    background: var(--card-bg);
-    border: 1px solid var(--input-border);
-    border-color: var(--input-border) !important;
+    background: var(--card-bg) !important;
+    border: 1px solid var(--input-border) !important;
     border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-    font-family: var(--font-ui);
+    font-family: var(--font-ui) !important;
 }
 
 .ql-container.ql-snow {
-    border-color: var(--input-border) !important;
+    background: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important;
     border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    font-family: var(--font-body) !important;
+    font-size: 1rem !important;
+    color: var(--input-text);
 }
 
-.ql-snow .ql-stroke {
+.ql-snow .ql-editor.ql-blank::before {
+    color: var(--text-muted);
+}
+
+.ql-snow .ql-stroke,
+.ql-snow .ql-fill {
     stroke: var(--text-secondary);
+    fill: none;
 }
 
 .ql-snow .ql-fill {
     fill: var(--text-secondary);
 }
 
-.ql-snow .ql-picker-label {
+.ql-snow .ql-picker-label,
+.ql-snow .ql-picker-item {
     color: var(--text-secondary);
 }
 
 .ql-snow .ql-picker-options {
-    background: var(--card-bg);
+    background-color: var(--card-bg) !important;
     border-color: var(--border) !important;
 }
 
-.ql-snow .ql-active .ql-stroke,
-.ql-snow .ql-active .ql-fill {
+.ql-snow .ql-active .ql-stroke {
     stroke: var(--primary);
+}
+
+.ql-snow .ql-active .ql-fill {
     fill: var(--primary);
 }
 
@@ -1293,9 +1298,14 @@ code {
 
 .actions-cell {
     white-space: nowrap;
-    display: flex;
-    gap: 8px;
-    align-items: center;
+}
+
+.actions-cell > * {
+    margin-left: 8px;
+}
+
+.actions-cell > *:first-child {
+    margin-left: 0;
 }
 
 .delete-form {

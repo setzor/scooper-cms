@@ -1047,6 +1047,7 @@ def paper_home_handler(path, params, form_data, handler):
         "pagination": {
             "current_page": page,
             "total_pages": total_pages,
+            "pages": list(range(1, total_pages + 1)),
             "total_count": total_count,
             "has_previous": page > 1,
             "has_next": page < total_pages,
@@ -1341,6 +1342,7 @@ def cms_stories_handler(path, params, form_data, handler, csrf_token=None):
             "current_page": page,
             "per_page": per_page,
             "total_pages": total_pages,
+            "pages": list(range(1, total_pages + 1)),
             "total_count": total_count,
             "has_previous": page > 1,
             "has_next": page < total_pages,
@@ -1591,9 +1593,21 @@ def cms_settings_handler(path, params, form_data, handler, csrf_token=None):
 
 def toggle_theme_handler(path, params, form_data, handler, csrf_token=None):
     """Handle theme toggle via AJAX."""
-    current = get_setting("theme", "light")
+    valid_themes = {
+        "light",
+        "dark",
+        "rose-pine-dawn",
+        "rose-pine",
+        "catpuccin-latte",
+        "catpuccin-frappe",
+        "catpuccin-macchiato",
+        "catpuccin-mocha",
+    }
+    current = get_current_theme()
     # Use the requested theme, fallback to a simple toggle if none provided
     new_theme = form_data.get("theme", "dark" if current == "light" else "light")
+    if new_theme not in valid_themes:
+        new_theme = "light"
     set_setting("theme", new_theme)
     return {"theme": new_theme, "success": True}
 

@@ -666,6 +666,22 @@ class Parser:
         
         return TextNode('', start_token.line, start_token.col)
 
+    def _peek_tag_name(self) -> Optional[str]:
+        """Peek the identifier following the current TAG_START without consuming."""
+        if self.current_token.type != TokenType.TAG_START:
+            return None
+        idx = self.position
+        if idx < len(self.tokens) and self.tokens[idx].type == TokenType.IDENTIFIER:
+            return self.tokens[idx].value
+        return None
+
+    def _skip_tag(self):
+        """Consume the current tag from TAG_START through TAG_END."""
+        while self.current_token.type not in (TokenType.TAG_END, TokenType.EOF):
+            self.advance()
+        if self.current_token.type == TokenType.TAG_END:
+            self.advance()
+
     def parse_include_tag(self, start_token: Token) -> IncludeNode:
         """Parse {% include template_name %}."""
         # Skip whitespace
@@ -712,8 +728,18 @@ class Parser:
             self.advance()
         
         if self.current_token.type == TokenType.IDENTIFIER:
-            iterable = self.current_token.value
+            # Dotted iterables, e.g. {% for p in pagination.pages %}
+            name_parts = [self.current_token.value]
             self.advance()
+            while self.current_token.type == TokenType.DOT:
+                name_parts.append(".")
+                self.advance()
+                if self.current_token.type == TokenType.IDENTIFIER:
+                    name_parts.append(self.current_token.value)
+                    self.advance()
+                else:
+                    break
+            iterable = "".join(name_parts)
         
         # Skip until tag end
         while self.current_token.type != TokenType.TAG_END:
@@ -726,120 +752,92 @@ class Parser:
         body: List[ASTNode] = []
         else_body: List[ASTNode] = []
         in_else = False
-        
+
         while self.current_token.type != TokenType.EOF:
             if self.current_token.type == TokenType.TAG_START:
-                self.advance()
-                if self.current_token.type == TokenType.IDENTIFIER:
-                    tag = self.current_token.value
-                    self.advance()
-                    # Skip to tag end
-                    while self.current_token.type != TokenType.TAG_END:
-                        self.advance()
-                    if self.current_token.type == TokenType.TAG_END:
-                        self.advance()
-                    
-                    if tag == 'endfor':
-                        break
-                    elif tag == 'else':
-                        in_else = True
-                        continue
-                continue
-            
+                tag = self._peek_tag_name()
+                if tag == 'endfor':
+                    self._skip_tag()
+                    break
+                if tag == 'else':
+                    self._skip_tag()
+                    in_else = True
+                    continue
+                # Anything else is a nested tag (if, for, include, ...):
+                # let parse_statement handle it recursively.
+
             node = self.parse_statement()
             if node:
                 if in_else:
                     else_body.append(node)
                 else:
                     body.append(node)
-        
+
         return ForLoopNode(loop_var, iterable, body, start_token.line, start_token.col, else_body)
 
     def parse_if_tag(self, start_token: Token) -> IfNode:
-        """Parse {% if condition %}...{% endif %}."""
+        """Parse {% if condition %}...{% elif %}...{% else %}...{% endif %}."""
         condition = self.parse_condition()
-        
+
         # Skip to tag end
         while self.current_token.type != TokenType.TAG_END:
             self.advance()
-        
+
         if self.current_token.type == TokenType.TAG_END:
             self.advance()
-        
-        # Parse body
-        body: List[ASTNode] = []
-        elif_branches: List = []
-        else_body: List[ASTNode] = []
-        in_elif = False
-        in_else = False
-        
+
+        # Parse branches as (condition or None for else, body) pairs.
+        # The first branch carries the if condition; later elif branches
+        # carry their own; the else branch (if any) is marked with None.
+        branches: List = []
+        current_body: List[ASTNode] = []
+        branches.append((condition, current_body))
+
         while self.current_token.type != TokenType.EOF:
             if self.current_token.type == TokenType.TAG_START:
-                self.advance()
-                if self.current_token.type == TokenType.IDENTIFIER:
-                    tag = self.current_token.value
-                    self.advance()
-                    # Skip to tag end
-                    while self.current_token.type != TokenType.TAG_END:
+                tag = self._peek_tag_name()
+                if tag == 'endif':
+                    self._skip_tag()
+                    break
+                if tag == 'elif':
+                    # Consume the tag, then parse the branch condition
+                    self.advance()  # TAG_START -> 'elif' identifier
+                    self.advance()  # 'elif' -> first condition token
+                    elif_condition = self.parse_condition()
+                    while self.current_token.type not in (TokenType.TAG_END, TokenType.EOF):
                         self.advance()
                     if self.current_token.type == TokenType.TAG_END:
                         self.advance()
-                    
-                    if tag == 'endif':
-                        break
-                    elif tag == 'elif':
-                        in_elif = True
-                        elif_condition = self.parse_condition()
-                        # Skip to tag end
-                        while self.current_token.type != TokenType.TAG_END:
-                            self.advance()
-                        if self.current_token.type == TokenType.TAG_END:
-                            self.advance()
-                        elif_body_nodes: List[ASTNode] = []
-                        # Parse elif body
-                        while self.current_token.type != TokenType.EOF:
-                            if self.current_token.type == TokenType.TAG_START:
-                                self.advance()
-                                if self.current_token.type == TokenType.IDENTIFIER:
-                                    next_tag = self.current_token.value
-                                    self.advance()
-                                    while self.current_token.type != TokenType.TAG_END:
-                                        self.advance()
-                                    if self.current_token.type == TokenType.TAG_END:
-                                        self.advance()
-                                    if next_tag in ('elif', 'else', 'endif'):
-                                        break
-                                continue
-                            node = self.parse_statement()
-                            if node:
-                                elif_body_nodes.append(node)
-                        elif_branches.append((elif_condition, elif_body_nodes))
-                        continue
-                    elif tag == 'else':
-                        in_else = True
-                        continue
-                continue
-            
+                    current_body = []
+                    branches.append((elif_condition, current_body))
+                    continue
+                if tag == 'else':
+                    self._skip_tag()
+                    current_body = []
+                    branches.append((None, current_body))
+                    continue
+                # Anything else is a nested tag: parse it recursively.
+
             node = self.parse_statement()
             if node:
-                if in_else:
-                    else_body.append(node)
-                elif in_elif:
-                    pass
-                else:
-                    body.append(node)
-        
-        return IfNode(condition, body, start_token.line, start_token.col, elif_branches, else_body)
+                current_body.append(node)
+
+        if_node_body = branches[0][1]
+        elif_branches = [(cond, body) for cond, body in branches[1:] if cond is not None]
+        else_body = next((body for cond, body in branches[1:] if cond is None), [])
+
+        return IfNode(condition, if_node_body, start_token.line, start_token.col, elif_branches, else_body)
 
     def parse_condition(self) -> ConditionNode:
         """Parse a condition expression."""
-        left = self.parse_primary()
-        
-        # Check for unary not
-        if self.current_token.type == TokenType.IDENTIFIER and self.current_token.value == 'not':
+        # Leading unary not: {% if not value %}
+        if (self.current_token.type == TokenType.IDENTIFIER
+                and self.current_token.value == 'not'):
             self.advance()
-            right = self.parse_primary()
-            return ConditionNode(left, TokenType.NOT, right, self.current_token.line, self.current_token.col)
+            operand = self.parse_primary()
+            return ConditionNode(operand, TokenType.NOT, None, self.current_token.line, self.current_token.col)
+
+        left = self.parse_primary()
         
         # Check for binary operators
         if self.current_token.type in (TokenType.EQUALS, TokenType.NOT_EQUALS, TokenType.GREATER,
