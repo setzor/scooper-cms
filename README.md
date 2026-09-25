@@ -1,22 +1,26 @@
 # Scooper CMS
 
-A lightweight, modern content management platform for news sites or blogs with a focus on simplicity and using pure python.
+A functional, low-maintenance, and fun CMS for cozy news sites and blogs. No frameworks to babysit, no build steps to run - just a small Python server, a SQLite file, and your stories.
 
 ## Features
 
 - **Paper-style Frontend**: Beautiful newspaper-style design for your readers
 - **Full CMS Backend**: Manage all your stories with an easy-to-use interface
+- **Block Editor**: Write stories with a friendly Editor.js editor (headings, lists, quotes, images, tables, embeds and more)
 - **Dark & Light Modes**: Toggle between themes with a single click
 - **Preview Functionality**: See how stories look before publishing
-- **Rich Content Support**: HTML content editing for full formatting control
 - **SQLite Database**: Zero-configuration, file-based database
-- **Pure Python**: Only standard library dependencies - no pip required
+- **Low Maintenance**: Standard-library Python backend, no pip installs, no build step
 
 ## Quick Start
 
 ```bash
 # Navigate to the Scooper directory
 cd /path/to/Scooper
+
+# Set admin credentials (required - the server will not start without them)
+export SCOOPER_ADMIN_USER=your_username
+export SCOOPER_ADMIN_PASS=your_secure_password
 
 # Run the server
 python3 server.py
@@ -32,13 +36,18 @@ The application will start on `http://localhost:8000`
 ```
 Scooper/
 ├── server.py           # Main application server
+├── editorjs_render.py   # Renders Editor.js block content to HTML
+├── demo_render.py       # Template rendering demo (safe: never wipes the DB by default)
+├── test_editorjs_render.py  # Tests for the block renderer
+├── test_template_engine.py # Tests for the template engine
 ├── db/                 # SQLite database
 │   └── scooper.db      # Database file (created on first run)
 ├── static/
 │   ├── css/
 │   │   └── style.css   # All styles (paper + CMS)
-│   └── js/
-│       └── script.js   # Client-side JavaScript
+│   ├── js/
+│   │   └── script.js   # Client-side JavaScript
+│   └── uploads/        # Uploaded images
 └── templates/
     ├── paper/
     │   ├── index.html   # Paper homepage
@@ -46,8 +55,8 @@ Scooper/
     └── cms/
         ├── dashboard.html  # CMS dashboard
         ├── stories.html    # Stories list
-        ├── create.html     # Create new story
-        ├── edit.html       # Edit story
+        ├── create.html     # Create new story (block editor)
+        ├── edit.html       # Edit story (block or classic editor)
         └── settings.html   # Site settings
 ```
 
@@ -64,10 +73,10 @@ Scooper/
 ### CMS Backend
 - **Dashboard**: Overview with statistics
 - **Stories**: List all stories with status indicators
-- **Create/Edit**: Rich text editing with HTML support
+- **Create/Edit**: Block editor for new stories; older HTML stories keep the classic editor
 - **Preview**: See how stories look before publishing
 - **Delete**: Remove stories with confirmation
-- **Settings**: Configure site title, description, and theme
+- **Settings**: Configure site title, description, categories, and theme
 
 ### Theme System
 - Light and dark modes
@@ -112,11 +121,7 @@ python server.py
 
 ## Adding Custom Categories
 
-Edit the categories list in the CMS create/edit handlers in `server.py`:
-
-```python
-categories = ['General', 'Local News', 'Technology', 'Business', 'Sports', 'Entertainment', 'Announcement']
-```
+Manage categories from the CMS: open **Settings** and use the category section to add, rename, or delete them. Stories keep their category if it is later removed.
 
 ## Database
 
@@ -245,7 +250,22 @@ It is not designed for production use and may be vulnerable to DoS attacks.
 ## Requirements
 
 - Python 3.6+
-- No additional dependencies (uses only standard library)
+- Nothing to install with pip - the backend runs entirely on the Python standard library
+- Internet access on first visit: a few frontend libraries load from a CDN (see below)
+
+## Dependencies
+
+Scooper aims to be low-maintenance, not zero-dependency. Here is the complete list:
+
+### Python backend
+- Python standard library only - no pip packages, no build step
+
+### Frontend (loaded from a CDN)
+- **Editor.js** and its tools (Apache-2.0) - the block editor used when creating and editing stories
+- **Quill 1.3.7** (MIT) - legacy editor, only used when editing stories written before the block editor
+- **Google Fonts** - Playfair Display and Nunito
+
+The story editor degrades gracefully: if the CDN is unreachable, the form falls back to a plain textarea.
 
 ## Browser Compatibility
 
@@ -274,7 +294,8 @@ Edit `static/js/script.js` to add custom client-side functionality.
 1. **First Run**: Sample stories are automatically created on first run
 2. **Preview**: Click the eye icon in the stories list to preview before publishing
 3. **Drafts**: Uncheck "Publish immediately" to save as draft
-4. **HTML Content**: The content field supports HTML for rich formatting
+4. **Block Editor**: Click the + button (or press Tab in an empty block) to insert headings, lists, quotes, images, tables and more
+5. **Template Demo**: Run `python3 demo_render.py` to render the paper templates with sample data (add `--wipe` to reset the database to demo content - it asks twice)
 
 ## License
 
@@ -282,8 +303,11 @@ Scooper CMS is free to use for any purpose and is licensed with the MIT License.
 
 ## Credits
 
-- Fonts: Google Fonts (Playfair Display, Lora, Source Serif Pro, Inter)
+- Fonts: [Google Fonts](https://fonts.google.com) (Playfair Display, Nunito)
+- Editor: [Editor.js](https://editorjs.io) (Apache-2.0)
+- Legacy editor: [Quill](https://quilljs.com) (MIT)
 - Icons: Unicode emoji characters
+- Mascot: Scoop the cat
 
 ---
 
